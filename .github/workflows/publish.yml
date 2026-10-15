@@ -5,7 +5,7 @@ name: Publish
 on:
   push:
     tags: [ 'v*' ]
-  # A manual run only checks that nuget.org still accepts this repository (Trusted Publishing login); it never packs or pushes.
+  # A manual run (workflow_dispatch) only checks that nuget.org still accepts this repository (Trusted Publishing login); it never packs or pushes.
   workflow_dispatch:
 
 jobs:
