@@ -1,5 +1,7 @@
 # E2e4.Chess.Logic
 
+<img src="assets/icon.png" alt="E2e4.Chess.Logic icon" width="96" height="96" align="right">
+
 A small, dependency-free chess rules library for .NET: bitboard move generation, a `Position` model with `Make`/`Unmake`, FEN parsing
 and validation, Zobrist hashing, and `PositionSetup` for editing and validating positions. It targets `net45`, `netstandard2.0`,
 `netstandard2.1` and `net10.0`, so it runs on old and new runtimes and on Linux, macOS and Windows. Install from NuGet:
