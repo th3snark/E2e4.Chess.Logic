@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Product>E2e4 Chess Logic Tests</Product>
+    <Description>xUnit tests for E2e4.Chess.Logic, including perft node-count checks.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\E2e4.Chess.Logic\E2e4.Chess.Logic.csproj" />
+  </ItemGroup>
+
+</Project>

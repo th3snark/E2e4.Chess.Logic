@@ -1,0 +1,326 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using E2e4.Chess.Logic.Bitboards;
+
+namespace E2e4.Chess.Logic.Model;
+
+/// <summary>
+/// Encapsulates the move generation component of the chess position. 
+/// </summary>
+public sealed partial class Position : IEquatable<Position>
+{
+
+    /// <summary>
+    /// Returns the list of legal moves for the position. Don't use this overload
+    /// when performance is important. Legality is tested by making and unmaking moves on this
+    /// instance, so a <see cref="Position"/> must not be used from several threads at once;
+    /// give each thread its own <see cref="DeepClone"/>.
+    /// </summary>
+    /// <returns>The list of legal moves for the position.</returns>
+    public List<Int32> LegalMoves()
+    {
+        Int32[] moves = new Int32[MaxMoves];
+        Int32 movesCount = LegalMoves(moves);
+        List<Int32> list = new List<Int32>(movesCount);
+        for (Int32 i = 0; i < movesCount; i++)
+            list.Add(moves[i]);
+        return list;
+    }
+
+    /// <summary>
+    /// Populates the given array with the legal moves for the position and 
+    /// returns the number of legal moves. 
+    /// </summary>
+    /// <param name="moves">The array to populate with the legal moves; it must have room for 
+    /// <see cref="MaxMoves"/> entries.</param>
+    /// <returns>The number of legal moves for the position.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="moves"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="moves"/> is shorter than 
+    /// <see cref="MaxMoves"/>.</exception>
+    public Int32 LegalMoves(Int32[] moves)
+    {
+        if (moves == null)
+            throw new ArgumentNullException(nameof(moves));
+        if (moves.Length < MaxMoves)
+            throw new ArgumentException("The array must have room for at least " + MaxMoves + " moves.", nameof(moves));
+
+        return GenerateLegalMoves(moves);
+    }
+
+#if NETSTANDARD2_1 || NET
+    /// <summary>
+    /// Populates the start of the given span with the legal moves for the position and
+    /// returns the number of legal moves. Unlike the array overload this accepts any slice
+    /// of a larger buffer, or stack memory. Not available on the older target frameworks,
+    /// which have no <see cref="Span{T}"/>.
+    /// </summary>
+    /// <param name="moves">The span to populate with the legal moves; it must have room for
+    /// <see cref="MaxMoves"/> entries.</param>
+    /// <returns>The number of legal moves for the position.</returns>
+    /// <exception cref="ArgumentException"><paramref name="moves"/> is shorter than
+    /// <see cref="MaxMoves"/>.</exception>
+    public Int32 LegalMoves(Span<Int32> moves)
+    {
+        if (moves.Length < MaxMoves)
+            throw new ArgumentException("The span must have room for at least " + MaxMoves + " moves.", nameof(moves));
+
+        return GenerateLegalMoves(moves);
+    }
+
+    private Int32 GenerateLegalMoves(Span<Int32> moves)
+#else
+    private Int32 GenerateLegalMoves(Int32[] moves)
+#endif
+    {
+        // Initialize bitboards and squares that describe the position. 
+        Int32 enemy = 1 - SideToMove;
+        Int32 kingSquare = Bitboard.Read(PieceBitboards[SideToMove | Piece.King]);
+
+        UInt64 selfBitboard = PieceBitboards[SideToMove];
+        UInt64 enemyBitboard = PieceBitboards[enemy];
+        UInt64 targetBitboard = ~selfBitboard;
+
+        UInt64 enemyBishopQueenBitboard = PieceBitboards[enemy | Piece.Bishop] | PieceBitboards[enemy | Piece.Queen];
+        UInt64 enemyRookQueenBitboard = PieceBitboards[enemy | Piece.Rook] | PieceBitboards[enemy | Piece.Queen];
+
+        // Initialize variables for move generation. 
+        UInt64 checkingBitboard = 0;
+        UInt64 pinningBitboard = 0;
+        Int32 index = 0;
+
+        // Consider knight and pawn checks. 
+        checkingBitboard |= PieceBitboards[enemy | Piece.Knight] & AttackBitboard.Knight(kingSquare);
+        checkingBitboard |= PieceBitboards[enemy | Piece.Pawn] & AttackBitboard.Pawn(kingSquare, SideToMove);
+
+        // Consider bishop and queen checks and pins. 
+        if ((enemyBishopQueenBitboard & Bitboard.Diagonals[kingSquare]) != 0)
+        {
+            checkingBitboard |= enemyBishopQueenBitboard & AttackBitboard.Bishop(kingSquare, OccupiedBitboard);
+
+            // Determine pinning pieces by removing the first line of defence around the
+            // the king, then seeing which pieces are able to attack.
+            UInt64 defenceRemovedBitboard = OccupiedBitboard;
+            UInt64 defenceBitboard = Bitboard.RayNE[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.IsolateReverse(defenceBitboard);
+            defenceBitboard = Bitboard.RayNW[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.IsolateReverse(defenceBitboard);
+            defenceBitboard = Bitboard.RaySE[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.Isolate(defenceBitboard);
+            defenceBitboard = Bitboard.RaySW[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.Isolate(defenceBitboard);
+
+            if (defenceRemovedBitboard != OccupiedBitboard)
+                pinningBitboard |= enemyBishopQueenBitboard & AttackBitboard.Bishop(kingSquare, defenceRemovedBitboard);
+        }
+
+        // Consider rook and queen checks and pins. 
+        if ((enemyRookQueenBitboard & Bitboard.Axes[kingSquare]) != 0)
+        {
+            checkingBitboard |= enemyRookQueenBitboard & AttackBitboard.Rook(kingSquare, OccupiedBitboard);
+
+            // Determine pinning pieces by removing the first line of defence around the
+            // the king, then seeing which pieces are able to attack.
+            UInt64 defenceRemovedBitboard = OccupiedBitboard;
+            UInt64 defenceBitboard = Bitboard.RayN[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.IsolateReverse(defenceBitboard);
+            defenceBitboard = Bitboard.RayE[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.Isolate(defenceBitboard);
+            defenceBitboard = Bitboard.RayS[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.Isolate(defenceBitboard);
+            defenceBitboard = Bitboard.RayW[kingSquare] & selfBitboard;
+            if (defenceBitboard != 0)
+                defenceRemovedBitboard ^= Bitboard.IsolateReverse(defenceBitboard);
+
+            if (defenceRemovedBitboard != OccupiedBitboard)
+                pinningBitboard |= enemyRookQueenBitboard & AttackBitboard.Rook(kingSquare, defenceRemovedBitboard);
+        }
+
+        // Consider castling. This is always fully tested for legality. 
+        if (checkingBitboard == 0)
+        {
+            Int32 rank = -56 * SideToMove + 56;
+
+            if ((Castling & (SideToMove == Colour.White ? CastlingRights.WhiteQueenside : CastlingRights.BlackQueenside)) != 0 && (Board[1 + rank] | Board[2 + rank] | Board[3 + rank]) == Piece.Empty)
+                if (!IsAttacked(SideToMove, 3 + rank) && !IsAttacked(SideToMove, 2 + rank))
+                    moves[index++] = Move.Create(this, kingSquare, 2 + rank, SideToMove | Piece.King);
+
+            if ((Castling & (SideToMove == Colour.White ? CastlingRights.WhiteKingside : CastlingRights.BlackKingside)) != 0 && (Board[5 + rank] | Board[6 + rank]) == Piece.Empty)
+                if (!IsAttacked(SideToMove, 5 + rank) && !IsAttacked(SideToMove, 6 + rank))
+                    moves[index++] = Move.Create(this, kingSquare, 6 + rank, SideToMove | Piece.King);
+        }
+
+        // Consider en passant. This is always fully tested for legality. 
+        if (EnPassantSquare != InvalidSquare)
+        {
+
+            UInt64 enPassantPawnBitboard = PieceBitboards[SideToMove | Piece.Pawn] & AttackBitboard.Pawn(EnPassantSquare, enemy);
+            UInt64 enPassantVictimBitboard = Move.Pawn(EnPassantSquare, enemy);
+            while (enPassantPawnBitboard != 0)
+            {
+
+                // Perform minimal state changes to mimic en passant and check for 
+                // legality. 
+                Int32 from = Bitboard.Pop(ref enPassantPawnBitboard);
+                PieceBitboards[enemy | Piece.Pawn] ^= enPassantVictimBitboard;
+                OccupiedBitboard ^= enPassantVictimBitboard;
+                OccupiedBitboard ^= (1UL << from) | (1UL << EnPassantSquare);
+
+                // Check for legality and add move. 
+                if (!IsAttacked(SideToMove, kingSquare))
+                    moves[index++] = Move.Create(this, from, EnPassantSquare, enemy | Piece.Pawn);
+
+                // Revert state changes. 
+                PieceBitboards[enemy | Piece.Pawn] ^= enPassantVictimBitboard;
+                OccupiedBitboard ^= enPassantVictimBitboard;
+                OccupiedBitboard ^= (1UL << from) | (1UL << EnPassantSquare);
+            }
+        }
+
+        // Consider king moves. This is always fully tested for legality. 
+        {
+            Int32 from = kingSquare;
+            UInt64 moveBitboard = targetBitboard & AttackBitboard.King(from);
+            while (moveBitboard != 0)
+            {
+                Int32 to = Bitboard.Pop(ref moveBitboard);
+                if (LeavesKingSafe(from, to, to))
+                    moves[index++] = Move.Create(this, from, to);
+            }
+        }
+
+        // Consider the other pieces. If we are not in check and there are no pinned pieces, none of their moves 
+        // can be illegal, so they need no test. If there are pinned pieces or a single check we can still move,
+        // but every move is tested. If there is a double check only the king can move, so there is nothing to do. 
+        Boolean testForLegality = checkingBitboard != 0 | pinningBitboard != 0;
+        if (!testForLegality || (checkingBitboard & (checkingBitboard - 1)) == 0)
+        {
+
+            // Consider pawn moves. 
+            UInt64 pieceBitboard = PieceBitboards[SideToMove | Piece.Pawn];
+            while (pieceBitboard != 0)
+            {
+
+                // Consider single square advance. 
+                Int32 from = Bitboard.Pop(ref pieceBitboard);
+                Int32 to = from + 16 * SideToMove - 8;
+                UInt64 moveBitboard = ~OccupiedBitboard & (1UL << to);
+
+                // Consider two square advance. 
+                if (moveBitboard != 0 && (from - 16) * (from - 47) > 0 && (to - 8) * (to - 55) < 0)
+                    moveBitboard |= ~OccupiedBitboard & (1UL << (from + 32 * SideToMove - 16));
+
+                // Consider captures. 
+                UInt64 attackBitboard = AttackBitboard.Pawn(from, SideToMove);
+                moveBitboard |= enemyBitboard & attackBitboard;
+
+                // Populate pawn moves. 
+                while (moveBitboard != 0)
+                {
+                    to = Bitboard.Pop(ref moveBitboard);
+                    if (testForLegality && !LeavesKingSafe(from, to, kingSquare))
+                        continue;
+
+                    if ((to - 8) * (to - 55) > 0)
+                    {
+                        moves[index++] = Move.Create(this, from, to, SideToMove | Piece.Queen);
+                        moves[index++] = Move.Create(this, from, to, SideToMove | Piece.Knight);
+                        moves[index++] = Move.Create(this, from, to, SideToMove | Piece.Rook);
+                        moves[index++] = Move.Create(this, from, to, SideToMove | Piece.Bishop);
+                    }
+                    else
+                        moves[index++] = Move.Create(this, from, to);
+                }
+            }
+
+            // Consider knight moves. 
+            pieceBitboard = PieceBitboards[SideToMove | Piece.Knight];
+            while (pieceBitboard != 0)
+            {
+                Int32 from = Bitboard.Pop(ref pieceBitboard);
+                UInt64 moveBitboard = targetBitboard & AttackBitboard.Knight(from);
+                while (moveBitboard != 0)
+                {
+                    Int32 to = Bitboard.Pop(ref moveBitboard);
+                    if (!testForLegality || LeavesKingSafe(from, to, kingSquare))
+                        moves[index++] = Move.Create(this, from, to);
+                }
+            }
+
+            // Consider bishop moves. 
+            pieceBitboard = PieceBitboards[SideToMove | Piece.Bishop];
+            while (pieceBitboard != 0)
+            {
+                Int32 from = Bitboard.Pop(ref pieceBitboard);
+                UInt64 moveBitboard = targetBitboard & AttackBitboard.Bishop(from, OccupiedBitboard);
+                while (moveBitboard != 0)
+                {
+                    Int32 to = Bitboard.Pop(ref moveBitboard);
+                    if (!testForLegality || LeavesKingSafe(from, to, kingSquare))
+                        moves[index++] = Move.Create(this, from, to);
+                }
+            }
+
+            // Consider queen moves. 
+            pieceBitboard = PieceBitboards[SideToMove | Piece.Queen];
+            while (pieceBitboard != 0)
+            {
+                Int32 from = Bitboard.Pop(ref pieceBitboard);
+                UInt64 moveBitboard = targetBitboard & AttackBitboard.Queen(from, OccupiedBitboard);
+                while (moveBitboard != 0)
+                {
+                    Int32 to = Bitboard.Pop(ref moveBitboard);
+                    if (!testForLegality || LeavesKingSafe(from, to, kingSquare))
+                        moves[index++] = Move.Create(this, from, to);
+                }
+            }
+
+            // Consider rook moves. 
+            pieceBitboard = PieceBitboards[SideToMove | Piece.Rook];
+            while (pieceBitboard != 0)
+            {
+                Int32 from = Bitboard.Pop(ref pieceBitboard);
+                UInt64 moveBitboard = targetBitboard & AttackBitboard.Rook(from, OccupiedBitboard);
+                while (moveBitboard != 0)
+                {
+                    Int32 to = Bitboard.Pop(ref moveBitboard);
+                    if (!testForLegality || LeavesKingSafe(from, to, kingSquare))
+                        moves[index++] = Move.Create(this, from, to);
+                }
+            }
+        }
+        return index;
+    }
+
+    /// <summary>
+    /// Performs the minimal state changes to mimic moving a piece from one square to another, reports whether our king
+    /// on <paramref name="kingSquare"/> is then safe from attack, and reverts the changes. Only the bitboards are
+    /// touched, never <c>Board</c>, so a move can be created from the position afterwards. 
+    /// </summary>
+    /// <param name="from">The square the piece moves from.</param>
+    /// <param name="to">The square the piece moves to, which may hold an enemy piece.</param>
+    /// <param name="kingSquare">The square of our king after the move (<paramref name="to"/> when the king moves).</param>
+    /// <returns>Whether our king is not attacked after the move.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private Boolean LeavesKingSafe(Int32 from, Int32 to, Int32 kingSquare)
+    {
+        UInt64 occupiedBitboardCopy = OccupiedBitboard;
+        Int32 capture = Board[to];
+        PieceBitboards[capture] ^= 1UL << to;
+        OccupiedBitboard ^= 1UL << from;
+        OccupiedBitboard |= 1UL << to;
+
+        Boolean safe = !IsAttacked(SideToMove, kingSquare);
+
+        PieceBitboards[capture] ^= 1UL << to;
+        OccupiedBitboard = occupiedBitboardCopy;
+        return safe;
+    }
+}

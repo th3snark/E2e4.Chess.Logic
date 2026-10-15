@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;netstandard2.0;netstandard2.1;net10.0</TargetFrameworks>
+    <Product>E2e4 Chess Logic</Product>
+    <Description>Chess move generation and rules library: bitboards, legal move generation, FEN parsing, Zobrist hashing and the Position model.</Description>
+    <PackageTags>chess;bitboard;move-generation;fen;zobrist;perft</PackageTags>
+    <PackageReleaseNotes>1.0.0: first release, split out of https://github.com/th3snark/E2e4.Chess. Bitboard move generation (checked against reference perft counts), the Position model with Make/Unmake, FEN parsing and validation, Zobrist hashing and PositionSetup for editing and validating positions. Targets net45, netstandard2.0, netstandard2.1 and net10.0; no dependencies.</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/th3snark/E2e4.Chess.Logic</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/th3snark/E2e4.Chess.Logic</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- ArgumentNullException.ThrowIfNull does not exist on net45 or netstandard2.0/2.1, so argument checks stay hand-written. -->
+    <NoWarn>$(NoWarn);CA1510</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="E2e4.Chess.Logic.Test" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Model\Position.*.cs">
+      <DependentUpon>Position.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+</Project>

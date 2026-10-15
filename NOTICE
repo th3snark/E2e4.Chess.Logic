@@ -1,0 +1,6 @@
+Copyright (c) 2026 GitHub: th3snark (E2e4).
+
+E2e4.Chess.Logic is released under the MIT licence, see LICENSE. It has no package dependencies.
+
+The tests use no recorded data: the perft node counts are the published reference counts for the standard test positions
+(facts about chess, not copied code), and the FEN strings are positions written for the tests.
