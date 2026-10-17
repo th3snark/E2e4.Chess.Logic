@@ -22,10 +22,16 @@ public sealed partial class Position : IEquatable<Position>
     /// <returns>Whether the FEN string was valid.</returns>
     public static Boolean TryParse(String? fen, [NotNullWhen(true)] out Position? position)
     {
+        return TryParseBoard(fen, false, out position);
+    }
+
+    // allowOpponentInCheck lets PositionSetup measure attacks on a board whose other fields are not yet consistent.
+    internal static Boolean TryParseBoard(String? fen, Boolean allowOpponentInCheck, [NotNullWhen(true)] out Position? position)
+    {
         Position candidate = new Position();
         try
         {
-            candidate.ParseFen(fen);
+            candidate.ParseFen(fen, allowOpponentInCheck);
         }
         catch (FormatException)
         {
@@ -65,8 +71,9 @@ public sealed partial class Position : IEquatable<Position>
     /// either fully described by the FEN string or left empty.
     /// </summary>
     /// <param name="fen">The FEN string to parse.</param>
+    /// <param name="allowOpponentInCheck">Accept a position whose side not to move is in check.</param>
     /// <exception cref="FormatException">The FEN string is invalid.</exception>
-    private void ParseFen(String? fen)
+    private void ParseFen(String? fen, Boolean allowOpponentInCheck = false)
     {
         ResetState();
 
@@ -120,6 +127,11 @@ public sealed partial class Position : IEquatable<Position>
                 PieceBitboards[colour] |= 1UL << square;
                 OccupiedBitboard |= 1UL << square;
             }
+
+        // The side not to move cannot be in check (this also rules out adjacent kings); such a
+        // position lets the mover capture a king, which move generation cannot represent.
+        if (!allowOpponentInCheck && InCheck(1 - SideToMove))
+            throw new FormatException("The side not to move is in check, or the kings are adjacent.");
 
         // Initialize Zobrist key and history.
         ZobristKey = GetZobristKey();
