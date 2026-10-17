@@ -20,13 +20,13 @@ public sealed partial class Position : IEquatable<Position>
     /// <param name="position">The parsed position, or null if the FEN string is
     /// invalid.</param>
     /// <returns>Whether the FEN string was valid.</returns>
-    public static Boolean TryParse(String? fen, [NotNullWhen(true)] out Position? position)
+    public static bool TryParse(string? fen, [NotNullWhen(true)] out Position? position)
     {
         return TryParseBoard(fen, false, out position);
     }
 
     // allowOpponentInCheck lets PositionSetup measure attacks on a board whose other fields are not yet consistent.
-    internal static Boolean TryParseBoard(String? fen, Boolean allowOpponentInCheck, [NotNullWhen(true)] out Position? position)
+    internal static bool TryParseBoard(string? fen, bool allowOpponentInCheck, [NotNullWhen(true)] out Position? position)
     {
         Position candidate = new Position();
         try
@@ -56,7 +56,7 @@ public sealed partial class Position : IEquatable<Position>
         _rootHalfMoves = 0;
         Castling = CastlingRights.None;
         EnPassantSquare = InvalidSquare;
-        for (Int32 i = 0; i < EnPassantHistory.Length; i++)
+        for (int i = 0; i < EnPassantHistory.Length; i++)
             EnPassantHistory[i] = InvalidSquare;
         FiftyMovesClock = 0;
         Array.Clear(FiftyMovesHistory, 0, FiftyMovesHistory.Length);
@@ -73,7 +73,7 @@ public sealed partial class Position : IEquatable<Position>
     /// <param name="fen">The FEN string to parse.</param>
     /// <param name="allowOpponentInCheck">Accept a position whose side not to move is in check.</param>
     /// <exception cref="FormatException">The FEN string is invalid.</exception>
-    private void ParseFen(String? fen, Boolean allowOpponentInCheck = false)
+    private void ParseFen(string? fen, bool allowOpponentInCheck = false)
     {
         ResetState();
 
@@ -84,7 +84,7 @@ public sealed partial class Position : IEquatable<Position>
             throw new FormatException("The FEN string is longer than " + MaxFenLength + " characters.");
 
         // Split FEN into terms based on whitespace.
-        String[] terms = fen.Split((Char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        string[] terms = fen.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length < 2)
             throw new FormatException("A FEN string needs at least piece placement and side to move.");
 
@@ -113,10 +113,10 @@ public sealed partial class Position : IEquatable<Position>
         }
         if (terms.Length > 5)
         {
-            Int64 halfMoves = 2L * (ParseCounter(terms[5], 1) - 1) + SideToMove;
+            long halfMoves = 2L * (ParseCounter(terms[5], 1) - 1) + SideToMove;
             if (halfMoves >= HalfMovesLimit)
                 throw new FormatException("The move number exceeds the supported game length.");
-            HalfMoves = (Int32)halfMoves;
+            HalfMoves = (int)halfMoves;
         }
 
         // Initialize history information.
@@ -126,10 +126,10 @@ public sealed partial class Position : IEquatable<Position>
         CastlingHistory[HalfMoves] = Castling;
 
         // Initialize bitboards.
-        for (Int32 square = 0; square < Board.Length; square++)
+        for (int square = 0; square < Board.Length; square++)
             if (Board[square] != Piece.Empty)
             {
-                Int32 colour = Board[square] & Colour.Mask;
+                int colour = Board[square] & Colour.Mask;
                 PieceBitboards[Board[square]] |= 1UL << square;
                 PieceBitboards[colour] |= 1UL << square;
                 OccupiedBitboard |= 1UL << square;
@@ -151,14 +151,14 @@ public sealed partial class Position : IEquatable<Position>
     /// per colour, no pawns on the first or last rank, and no more material than the
     /// starting pieces and promotions can account for.
     /// </summary>
-    private void ParsePiecePlacement(String placement)
+    private void ParsePiecePlacement(string placement)
     {
-        Int32 file = 0;
-        Int32 rank = 0;
-        Int32[] kings = new Int32[2];
-        Int32[][] counts = { new Int32[Piece.King + 1], new Int32[Piece.King + 1] };
+        int file = 0;
+        int rank = 0;
+        int[] kings = new int[2];
+        int[][] counts = { new int[Piece.King + 1], new int[Piece.King + 1] };
 
-        foreach (Char c in placement)
+        foreach (char c in placement)
         {
             if (c == '/')
             {
@@ -175,8 +175,8 @@ public sealed partial class Position : IEquatable<Position>
             }
             else
             {
-                Int32 colour = Char.IsUpper(c) ? Colour.White : Colour.Black;
-                Int32 piece = Piece.FromInitial(c);
+                int colour = char.IsUpper(c) ? Colour.White : Colour.Black;
+                int piece = Piece.FromInitial(c);
                 if (piece == Piece.Empty)
                     throw new FormatException("Unknown piece '" + c + "'.");
                 if (piece == Piece.King)
@@ -203,13 +203,13 @@ public sealed partial class Position : IEquatable<Position>
     /// Rejects a side with more than eight pawns, or with more extra queens, rooks, bishops and
     /// knights than its missing pawns could have promoted into (every promotion costs a pawn).
     /// </summary>
-    private static void RequirePlausibleMaterial(Int32[] counts)
+    private static void RequirePlausibleMaterial(int[] counts)
     {
-        Int32 pawns = counts[Piece.Pawn];
+        int pawns = counts[Piece.Pawn];
         if (pawns > 8)
             throw new FormatException("A side cannot have more than eight pawns.");
 
-        Int32 promoted = Math.Max(0, counts[Piece.Queen] - 1)
+        int promoted = Math.Max(0, counts[Piece.Queen] - 1)
                        + Math.Max(0, counts[Piece.Rook] - 2)
                        + Math.Max(0, counts[Piece.Bishop] - 2)
                        + Math.Max(0, counts[Piece.Knight] - 2);
@@ -221,14 +221,14 @@ public sealed partial class Position : IEquatable<Position>
     /// Parses the castling rights field, requiring the king and rook concerned
     /// to stand on their original squares.
     /// </summary>
-    private void ParseCastlingRights(String rights)
+    private void ParseCastlingRights(string rights)
     {
         if (rights == "-")
             return;
         if (rights.Length == 0 || rights.Length > 4)
             throw new FormatException("Invalid castling rights.");
 
-        foreach (Char c in rights)
+        foreach (char c in rights)
         {
             switch (c)
             {
@@ -254,7 +254,7 @@ public sealed partial class Position : IEquatable<Position>
         }
     }
 
-    private void RequireCastlingPieces(Int32 colour, Int32 kingSquare, Int32 rookSquare)
+    private void RequireCastlingPieces(int colour, int kingSquare, int rookSquare)
     {
         if (Board[kingSquare] != (colour | Piece.King) || Board[rookSquare] != (colour | Piece.Rook))
             throw new FormatException("A castling right requires the king and rook on their original squares.");
@@ -264,20 +264,20 @@ public sealed partial class Position : IEquatable<Position>
     /// Parses the en passant field, requiring a pawn that has just advanced two
     /// squares past the empty target square.
     /// </summary>
-    private void ParseEnPassantSquare(String field)
+    private void ParseEnPassantSquare(string field)
     {
         if (field == "-")
             return;
 
         // After white moves (black to move) the target is on rank 3; otherwise rank 6.
-        Char expectedRank = SideToMove == Colour.Black ? '3' : '6';
+        char expectedRank = SideToMove == Colour.Black ? '3' : '6';
         if (field.Length != 2 || field[0] < 'a' || field[0] > 'h' || field[1] != expectedRank)
             throw new FormatException("Invalid en passant square.");
 
-        Int32 target = Square.SquareAt(field);
-        Int32 pushed = SideToMove == Colour.Black ? target - 8 : target + 8;
-        Int32 origin = SideToMove == Colour.Black ? target + 8 : target - 8;
-        Int32 pawn = (SideToMove == Colour.Black ? Colour.White : Colour.Black) | Piece.Pawn;
+        int target = Square.SquareAt(field);
+        int pushed = SideToMove == Colour.Black ? target - 8 : target + 8;
+        int origin = SideToMove == Colour.Black ? target + 8 : target - 8;
+        int pawn = (SideToMove == Colour.Black ? Colour.White : Colour.Black) | Piece.Pawn;
         if (Board[target] != Piece.Empty || Board[origin] != Piece.Empty || Board[pushed] != pawn)
             throw new FormatException("The en passant square is inconsistent with the board.");
 
@@ -288,10 +288,10 @@ public sealed partial class Position : IEquatable<Position>
     /// Parses a non-negative decimal counter, rejecting signs, overflow and
     /// values below the minimum.
     /// </summary>
-    private static Int32 ParseCounter(String text, Int32 minimum)
+    private static int ParseCounter(string text, int minimum)
     {
-        Int32 value;
-        if (!Int32.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value) || value < minimum)
+        int value;
+        if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value) || value < minimum)
             throw new FormatException("Invalid move counter '" + text + "'.");
         return value;
     }
@@ -300,16 +300,16 @@ public sealed partial class Position : IEquatable<Position>
     /// Returns the FEN string that describes the position.
     /// </summary>
     /// <returns>The FEN string that describes the position.</returns>
-    public String GetFEN()
+    public string GetFEN()
     {
         StringBuilder sb = new StringBuilder();
 
-        for (Int32 rank = 0; rank < 8; rank++)
+        for (int rank = 0; rank < 8; rank++)
         {
-            Int32 spaces = 0;
-            for (Int32 file = 0; file < 8; file++)
+            int spaces = 0;
+            for (int file = 0; file < 8; file++)
             {
-                Int32 square = file + rank * 8;
+                int square = file + rank * 8;
                 if (Board[square] == Piece.Empty)
                     spaces++;
                 else
@@ -319,7 +319,7 @@ public sealed partial class Position : IEquatable<Position>
                         sb.Append(spaces);
                         spaces = 0;
                     }
-                    String piece = Piece.GetInitial(Board[square]);
+                    string piece = Piece.GetInitial(Board[square]);
                     if ((Board[square] & Colour.Mask) == Colour.Black)
                         piece = piece.ToLowerInvariant();
                     sb.Append(piece);

@@ -20,61 +20,61 @@ internal static class Bitboard
     /// The collection of bitboard files for a given square. File[s] gives a bitboard of the
     /// squares along the file of square s.
     /// </summary>
-    public static readonly UInt64[] File = new UInt64[64];
+    public static readonly ulong[] File = new ulong[64];
 
     /// <summary>
     /// The collection of bitboard ranks for a given square. Rank[s] gives a bitboard of the
     /// squares along the rank of square s.
     /// </summary>
-    public static readonly UInt64[] Rank = new UInt64[64];
+    public static readonly ulong[] Rank = new ulong[64];
 
     /// <summary>RayN[s] gives a bitboard of the ray of squares strictly to the north of square s.</summary>
-    public static readonly UInt64[] RayN = new UInt64[64];
+    public static readonly ulong[] RayN = new ulong[64];
 
     /// <summary>RayE[s] gives a bitboard of the ray of squares strictly to the east of square s.</summary>
-    public static readonly UInt64[] RayE = new UInt64[64];
+    public static readonly ulong[] RayE = new ulong[64];
 
     /// <summary>RayS[s] gives a bitboard of the ray of squares strictly to the south of square s.</summary>
-    public static readonly UInt64[] RayS = new UInt64[64];
+    public static readonly ulong[] RayS = new ulong[64];
 
     /// <summary>RayW[s] gives a bitboard of the ray of squares strictly to the west of square s.</summary>
-    public static readonly UInt64[] RayW = new UInt64[64];
+    public static readonly ulong[] RayW = new ulong[64];
 
     /// <summary>RayNE[s] gives a bitboard of the ray of squares strictly to the northeast of square s.</summary>
-    public static readonly UInt64[] RayNE = new UInt64[64];
+    public static readonly ulong[] RayNE = new ulong[64];
 
     /// <summary>RayNW[s] gives a bitboard of the ray of squares strictly to the northwest of square s.</summary>
-    public static readonly UInt64[] RayNW = new UInt64[64];
+    public static readonly ulong[] RayNW = new ulong[64];
 
     /// <summary>RaySE[s] gives a bitboard of the ray of squares strictly to the southeast of square s.</summary>
-    public static readonly UInt64[] RaySE = new UInt64[64];
+    public static readonly ulong[] RaySE = new ulong[64];
 
     /// <summary>RaySW[s] gives a bitboard of the ray of squares strictly to the southwest of square s.</summary>
-    public static readonly UInt64[] RaySW = new UInt64[64];
+    public static readonly ulong[] RaySW = new ulong[64];
 
     /// <summary>
     /// The horizontal and vertical rays extending from a given square. Axes[s] gives a bitboard
     /// of the squares on the same rank and file as square s, not including s itself.
     /// </summary>
-    public static readonly UInt64[] Axes = new UInt64[64];
+    public static readonly ulong[] Axes = new ulong[64];
 
     /// <summary>
     /// The diagonal rays extending from a given square. Diagonals[s] gives a bitboard of the
     /// squares along the diagonals of square s, not including s itself.
     /// </summary>
-    public static readonly UInt64[] Diagonals = new UInt64[64];
+    public static readonly ulong[] Diagonals = new ulong[64];
 
     /// <summary>
     /// The bitboard of all light squares.
     /// </summary>
-    public const UInt64 LightSquares = 0xAA55AA55AA55AA55UL;
+    public const ulong LightSquares = 0xAA55AA55AA55AA55UL;
 
     /// <summary>
     /// Initializes lookup tables.
     /// </summary>
     static Bitboard()
     {
-        for (Int32 square = 0; square < 64; square++)
+        for (int square = 0; square < 64; square++)
         {
             // Initialize file and rank bitboard tables.
             File[square] = LineFill(Square.File(square), 0, 1);
@@ -100,9 +100,9 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to pop.</param>
     /// <returns>The index of the least significant set bit.</returns>
-    public static Int32 Pop(ref UInt64 bitboard)
+    public static int Pop(ref ulong bitboard)
     {
-        Int32 index = Scan(bitboard);
+        int index = Scan(bitboard);
         bitboard &= bitboard - 1;
         return index;
     }
@@ -112,7 +112,7 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to read.</param>
     /// <returns>The index of the single set bit.</returns>
-    public static Int32 Read(UInt64 bitboard)
+    public static int Read(ulong bitboard)
     {
         return Scan(bitboard);
     }
@@ -123,7 +123,7 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to scan.</param>
     /// <returns>The index of the least significant set bit.</returns>
-    public static Int32 Scan(UInt64 bitboard)
+    public static int Scan(ulong bitboard)
     {
 #if NET
         return BitOperations.TrailingZeroCount(bitboard);
@@ -138,7 +138,7 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to scan.</param>
     /// <returns>The index of the most significant set bit.</returns>
-    public static Int32 ScanReverse(UInt64 bitboard)
+    public static int ScanReverse(ulong bitboard)
     {
 #if NET
         return 63 - BitOperations.LeadingZeroCount(bitboard);
@@ -152,7 +152,7 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to isolate the least significant bit.</param>
     /// <returns>The given bitboard with only the least significant bit set.</returns>
-    public static UInt64 Isolate(UInt64 bitboard)
+    public static ulong Isolate(ulong bitboard)
     {
         return bitboard & (0UL - bitboard);
     }
@@ -162,7 +162,7 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to isolate the most significant bit.</param>
     /// <returns>The given bitboard with only the most significant bit set.</returns>
-    public static UInt64 IsolateReverse(UInt64 bitboard)
+    public static ulong IsolateReverse(ulong bitboard)
     {
 #if NET
         return bitboard == 0 ? 0UL : 1UL << (63 - BitOperations.LeadingZeroCount(bitboard));
@@ -176,7 +176,7 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to count.</param>
     /// <returns>The number of set bits.</returns>
-    public static Int32 Count(UInt64 bitboard)
+    public static int Count(ulong bitboard)
     {
 #if NET
         return BitOperations.PopCount(bitboard);
@@ -192,9 +192,9 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to count.</param>
     /// <returns>The number of set bits.</returns>
-    public static Int32 CountSparse(UInt64 bitboard)
+    public static int CountSparse(ulong bitboard)
     {
-        Int32 count = 0;
+        int count = 0;
         while (bitboard != 0)
         {
             count++;
@@ -211,11 +211,11 @@ internal static class Bitboard
     /// <param name="dx">The x component of the line's direction vector.</param>
     /// <param name="dy">The y component of the line's direction vector.</param>
     /// <returns>The bitboard that is the result of the line fill.</returns>
-    public static UInt64 LineFill(Int32 index, Int32 dx, Int32 dy)
+    public static ulong LineFill(int index, int dx, int dy)
     {
         if (index < 0 || index > 63)
             return 0;
-        UInt64 bitboard = 1UL << index;
+        ulong bitboard = 1UL << index;
 
         // Stay on the same rank: the rank of a square is index / 8 (floor, so -1 is rank -1).
         if ((index >> 3) == ((index + dx) >> 3))
@@ -229,15 +229,15 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to convert.</param>
     /// <returns>The binary representation of the bitboard.</returns>
-    public static String ToString(UInt64 bitboard)
+    public static string ToString(ulong bitboard)
     {
-        Char[] chars = new Char[64];
-        for (Int32 i = chars.Length - 1; i >= 0; i--)
+        char[] chars = new char[64];
+        for (int i = chars.Length - 1; i >= 0; i--)
         {
-            chars[i] = (Char)((bitboard & 1) + 48);
+            chars[i] = (char)((bitboard & 1) + 48);
             bitboard >>= 1;
         }
-        return new String(chars);
+        return new string(chars);
     }
 
     /// <summary>
@@ -246,11 +246,11 @@ internal static class Bitboard
     /// </summary>
     /// <param name="bitboard">The bitboard to convert</param>
     /// <returns>The binary representation of the bitboard in a matrix format.</returns>
-    public static String ToMatrix(UInt64 bitboard)
+    public static string ToMatrix(ulong bitboard)
     {
         StringBuilder sb = new StringBuilder(78);
-        Int32 file = 0;
-        for (Int32 i = 0; i < 71; i++)
+        int file = 0;
+        for (int i = 0; i < 71; i++)
             if (++file > 8)
             {
                 sb.Append(Environment.NewLine);

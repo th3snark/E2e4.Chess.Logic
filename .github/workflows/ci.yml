@@ -31,6 +31,9 @@ jobs:
       - name: Check formatting
         if: runner.os == 'Windows'
         run: dotnet format whitespace E2e4.Chess.Logic.slnx --verify-no-changes
+      - name: Check type keywords
+        if: runner.os == 'Windows'
+        run: dotnet format style E2e4.Chess.Logic.slnx --verify-no-changes --diagnostics IDE0049 --severity warn
       - name: Test
         run: dotnet test E2e4.Chess.Logic.slnx --configuration Release
       - name: Check for vulnerable packages
