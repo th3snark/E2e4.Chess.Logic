@@ -142,6 +142,9 @@ public sealed class PositionSetup
         if (fen == null)
             return false;
 
+        if (fen.Length > Position.MaxFenLength)
+            return false;
+
         String[] terms = fen.Split((Char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length < 1)
             return false;
@@ -424,6 +427,10 @@ public sealed class PositionSetup
                 kingsPresent = false;
             }
         }
+
+        if (FiftyMovesClock < 0 || FiftyMovesClock > Position.MaxFiftyMovesClock
+            || MoveNumber < 1 || 2L * (MoveNumber - 1) + SideToMove >= Position.HalfMovesLimit)
+            problems.Add(new PositionProblem(PositionProblemKind.InvalidCounters, PositionProblemSeverity.Error, "The move number or fifty-moves clock is outside the supported range."));
 
         if (pawnOnEdge)
             problems.Add(new PositionProblem(PositionProblemKind.PawnOnLastRank, PositionProblemSeverity.Error, "A pawn cannot stand on the first or last rank."));

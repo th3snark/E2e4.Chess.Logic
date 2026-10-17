@@ -110,8 +110,13 @@ public static class Move
     /// <param name="to">The to square of the move.</param>
     /// <param name="special">The special piece of the move.</param>
     /// <returns>A move encoded from the given parameters.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">A square is outside 0 to 63.</exception>
     public static Int32 Create(Position position, Int32 from, Int32 to, Int32 special = Piece.Empty)
     {
+        if ((UInt32)from > 63)
+            throw new ArgumentOutOfRangeException(nameof(from));
+        if ((UInt32)to > 63)
+            throw new ArgumentOutOfRangeException(nameof(to));
         return from | (to << ToShift) | (position.Board[from] << PieceShift) | (position.Board[to] << CaptureShift) | (special << SpecialShift);
     }
 

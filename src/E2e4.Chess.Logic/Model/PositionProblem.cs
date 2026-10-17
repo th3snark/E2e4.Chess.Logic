@@ -44,6 +44,9 @@ public enum PositionProblemKind
 
     /// <summary>The side to move has no legal move (checkmate or stalemate).</summary>
     NoLegalMoves,
+
+    /// <summary>The move number or fifty-moves clock is outside the supported range.</summary>
+    InvalidCounters,
 }
 
 /// <summary>One thing found wrong with a <see cref="PositionSetup"/> by <see cref="PositionSetup.Validate"/>.</summary>
