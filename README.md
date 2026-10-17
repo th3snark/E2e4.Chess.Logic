@@ -30,10 +30,6 @@ and `net10.0` there is also `LegalMoves(Span<int>)`.
 For a position editor, `PositionSetup` accepts any arrangement while it is being edited, `Validate()` lists the problems
 (`PositionProblem`), and `ToPosition()` returns the playable `Position` once it is legal.
 
-## Licence
-
-MIT, see [LICENSE](https://github.com/th3snark/E2e4.Chess.Logic/blob/master/LICENSE). No dependencies.
-
 ## Notes
 
 - `Position.TryParse` and `PositionSetup.TryParse` return `false` on bad input instead of throwing, and `Make`/`Unmake` throw at the
@@ -47,3 +43,7 @@ dotnet test E2e4.Chess.Logic.slnx
 ```
 
 See [SECURITY.md](https://github.com/th3snark/E2e4.Chess.Logic/blob/master/SECURITY.md) to report a vulnerability.
+
+## Licence
+
+MIT, see [LICENSE](https://github.com/th3snark/E2e4.Chess.Logic/blob/master/LICENSE). No dependencies.
