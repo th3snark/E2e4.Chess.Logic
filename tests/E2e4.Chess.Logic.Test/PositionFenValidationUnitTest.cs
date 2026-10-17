@@ -43,12 +43,14 @@ public class PositionFenValidationUnitTest
         "4k3/pppppppp/8/8/8/8/PPPPPPPP/QQ2K3 w - - 0 1",                         // eight pawns and two queens
         "4k3/8/8/8/8/8/PPPPPPP1/QQQ1K3 w - - 0 1",                               // seven pawns and three queens
         "rrr1k3/pppppppp/8/8/8/8/8/4K3 w - - 0 1",                               // eight pawns and three rooks
+        "4k3/8/8/8/8/8/8/4RK2 w - - 0 1",                                        // black king in check, white to move
+        "8/8/8/8/8/8/3k4/3K4 w - - 0 1",                                         // adjacent kings
     };
 
     [Theory]
     [InlineData("4k3/8/8/8/8/8/PPPPPPPP/4K3 w - - 0 1")]                         // eight pawns
     [InlineData("4k3/8/8/8/8/8/PPPPPPP1/QQ2K3 w - - 0 1")]                       // seven pawns, one promotion
-    [InlineData("4k3/8/8/8/8/8/QQQQQQQQ/QK6 w - - 0 1")]                         // no pawns, eight promotions
+    [InlineData("4k3/8/8/8/8/8/QQQQQQQQ/QK6 b - - 0 1")]                         // no pawns, eight promotions
     [InlineData("rrr1k3/8/8/8/8/8/8/4K3 w - - 0 1")]                             // no pawns, a third rook
     public void TryParseAcceptsMaterialThatPromotionsCanExplain(string fen)
     {

@@ -484,7 +484,7 @@ public sealed class PositionSetup
         bare.Castling = CastlingRights.None;
         bare.EnPassantSquare = NoSquare;
         // Null when the position cannot be played; the caller reports that through its own problem list.
-        _ = Position.TryParse(bare.ToFen(), out Position? position);
+        _ = Position.TryParseBoard(bare.ToFen(), true, out Position? position);
         return position;
     }
 
