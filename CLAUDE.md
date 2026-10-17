@@ -26,8 +26,8 @@ it here, release it with a `vX.Y.Z` tag, then bump the pin in each of them.
   `TargetFrameworks`. `BitOperations` is used under `#if NET`, `PortableBitOperations` everywhere else.
 - No dependencies, no WPF/WinForms/`System.Drawing`, no I/O. CI fails if the library gains a package dependency.
 - Public surface is small on purpose (`Position`, `Move`, `Piece`/`Colour`/`Square`, `PositionSetup`, `CastlingRights`, `PositionProblem`,
-  `AlgebraicNotationFormat`); `Bitboard` and the raw board arrays are `internal` (tests use `InternalsVisibleTo`). `HashEntry` and `HashTable` exist only in the test project
-(`tests/.../Support`), as a client of `Zobrist` for the hashing tests; the library itself has no transposition table.
+  `AlgebraicNotationFormat`); `Bitboard` and the raw board arrays are `internal` (tests use `InternalsVisibleTo`).
+  The library has no transposition table (`Zobrist` supplies the position key only).
 - Nullable is on and warnings are errors: the tree must build with 0 warnings. File-scoped namespaces are enforced by `.editorconfig`.
 - Source files use CRLF line endings (the editor tools tend to write LF; convert before committing, `git ls-files --eol` shows the state).
 - Fixtures and test data stay synthetic or public facts; keep the parser robust (bad FEN returns false, never throws or loops).
