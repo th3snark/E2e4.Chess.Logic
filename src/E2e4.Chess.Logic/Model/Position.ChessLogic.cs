@@ -13,7 +13,7 @@ public sealed partial class Position : IEquatable<Position>
     /// </summary>
     /// <param name="colour">The side to test for check.</param>
     /// <returns>Whether the given side is in check.</returns>
-    public Boolean InCheck(Int32 colour)
+    public bool InCheck(int colour)
     {
         return IsAttacked(colour, Bitboard.Read(PieceBitboards[colour | Piece.King]));
     }
@@ -24,21 +24,21 @@ public sealed partial class Position : IEquatable<Position>
     /// <param name="colour">The side to test for being attacked.</param>
     /// <param name="square">The square to test for attacks.</param>
     /// <returns>Whether the given side is attacked on the given square</returns>
-    public Boolean IsAttacked(Int32 colour, Int32 square)
+    public bool IsAttacked(int colour, int square)
     {
-        Int32 enemy = 1 - colour;
+        int enemy = 1 - colour;
 
         if ((PieceBitboards[enemy | Piece.Knight] & AttackBitboard.Knight(square)) != 0
          || (PieceBitboards[enemy | Piece.Pawn] & AttackBitboard.Pawn(square, colour)) != 0
          || (PieceBitboards[enemy | Piece.King] & AttackBitboard.King(square)) != 0)
             return true;
 
-        UInt64 bishopQueenBitboard = PieceBitboards[enemy | Piece.Bishop] | PieceBitboards[enemy | Piece.Queen];
+        ulong bishopQueenBitboard = PieceBitboards[enemy | Piece.Bishop] | PieceBitboards[enemy | Piece.Queen];
         if ((bishopQueenBitboard & Bitboard.Diagonals[square]) != 0
          && (bishopQueenBitboard & AttackBitboard.Bishop(square, OccupiedBitboard)) != 0)
             return true;
 
-        UInt64 rookQueenBitboard = PieceBitboards[enemy | Piece.Rook] | PieceBitboards[enemy | Piece.Queen];
+        ulong rookQueenBitboard = PieceBitboards[enemy | Piece.Rook] | PieceBitboards[enemy | Piece.Queen];
         if ((rookQueenBitboard & Bitboard.Axes[square]) != 0
          && (rookQueenBitboard & AttackBitboard.Rook(square, OccupiedBitboard)) != 0)
             return true;
@@ -51,15 +51,15 @@ public sealed partial class Position : IEquatable<Position>
     /// </summary>
     /// <param name="move">The move to test for check.</param>
     /// <returns>Whether the given move puts the opponent in check.</returns>
-    public Boolean CausesCheck(Int32 move)
+    public bool CausesCheck(int move)
     {
-        UInt64 fromBitboard = 1UL << Move.From(move);
-        UInt64 toBitboard = 1UL << Move.To(move);
-        Int32 piece = Move.MovingPiece(move);
-        Int32 special = Move.SpecialPiece(move);
-        UInt64 occupiedBitboardCopy = OccupiedBitboard;
+        ulong fromBitboard = 1UL << Move.From(move);
+        ulong toBitboard = 1UL << Move.To(move);
+        int piece = Move.MovingPiece(move);
+        int special = Move.SpecialPiece(move);
+        ulong occupiedBitboardCopy = OccupiedBitboard;
 
-        Boolean value = false;
+        bool value = false;
         switch (special & Piece.Mask)
         {
 
@@ -75,7 +75,7 @@ public sealed partial class Position : IEquatable<Position>
 
             // Consider castling.
             case Piece.King:
-                UInt64 rookToBitboard = 1UL << ((toBitboard < fromBitboard ? 3 : 5) + Square.Rank(Move.To(move)) * 8);
+                ulong rookToBitboard = 1UL << ((toBitboard < fromBitboard ? 3 : 5) + Square.Rank(Move.To(move)) * 8);
                 PieceBitboards[SideToMove | Piece.Rook] ^= rookToBitboard;
                 OccupiedBitboard ^= fromBitboard;
                 value = InCheck(1 - SideToMove);
@@ -85,7 +85,7 @@ public sealed partial class Position : IEquatable<Position>
 
             // Consider en passant.
             case Piece.Pawn:
-                UInt64 enPassantPawnBitboard = Move.Pawn(EnPassantSquare, 1 - SideToMove);
+                ulong enPassantPawnBitboard = Move.Pawn(EnPassantSquare, 1 - SideToMove);
                 PieceBitboards[piece] ^= fromBitboard | toBitboard;
                 OccupiedBitboard ^= fromBitboard | toBitboard | enPassantPawnBitboard;
                 value = InCheck(1 - SideToMove);
@@ -115,9 +115,9 @@ public sealed partial class Position : IEquatable<Position>
     /// with the defender's help; pawns, rooks and queens always count as sufficient.
     /// </summary>
     /// <returns>Whether the position represents a draw by insufficient material.</returns>
-    public Boolean InsufficientMaterial()
+    public bool InsufficientMaterial()
     {
-        Int32 pieces = Bitboard.Count(OccupiedBitboard);
+        int pieces = Bitboard.Count(OccupiedBitboard);
         if (pieces > 4)
             return false;
         if (pieces <= 2)
@@ -143,11 +143,11 @@ public sealed partial class Position : IEquatable<Position>
     /// </summary>
     /// <param name="times">The number of repetitions to test for.</param>
     /// <returns>Whether the position has repeated the given number of times.</returns>
-    public Boolean HasRepeated(Int32 times)
+    public bool HasRepeated(int times)
     {
         // Nothing before the root of the game was recorded, so the scan must not read below it.
-        Int32 repetitions = 1;
-        for (Int32 i = HalfMoves - 4; i >= Math.Max(_rootHalfMoves, HalfMoves - FiftyMovesClock); i -= 2)
+        int repetitions = 1;
+        for (int i = HalfMoves - 4; i >= Math.Max(_rootHalfMoves, HalfMoves - FiftyMovesClock); i -= 2)
             if (ZobristKeyHistory[i] == ZobristKey)
                 if (++repetitions >= times)
                     return true;

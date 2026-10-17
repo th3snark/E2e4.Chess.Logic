@@ -9,8 +9,12 @@ trim_trailing_whitespace = true
 [*.cs]
 indent_style = space
 indent_size = 4
-# Every file uses file-scoped namespaces; the build enforces it.
+# Every file uses file-scoped namespaces; CI checks it with dotnet format style (the compiler does not report IDE0049).
 csharp_style_namespace_declarations = file_scoped:warning
+# Predefined type keywords (int, string) rather than framework names (Int32, String); the build enforces it.
+dotnet_style_predefined_type_for_locals_parameters_members = true
+dotnet_style_predefined_type_for_member_access = true
+dotnet_diagnostic.IDE0049.severity = warning
 
 # AnalysisLevel is latest-recommended (Directory.Build.props). These rules are downgraded to suggestions because
 # acting on them would cost more than it gains here:

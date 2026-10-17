@@ -15,7 +15,7 @@ internal sealed class HashTable
     /// <summary>
     /// The number of entries stored in the hash table.
     /// </summary>
-    public Int32 Count
+    public int Count
     {
         get;
         private set;
@@ -24,16 +24,16 @@ internal sealed class HashTable
     /// <summary>
     /// The number of entries that can be stored in the hash table.
     /// </summary>
-    public Int32 Capacity
+    public int Capacity
     {
-        get { return (Int32)_capacity; }
+        get { return (int)_capacity; }
     }
-    private readonly UInt64 _capacity;
+    private readonly ulong _capacity;
 
     /// <summary>
     /// The size of the hash table in bytes.
     /// </summary>
-    public Int32 Size
+    public int Size
     {
         get { return HashEntry.Size * Capacity; }
     }
@@ -42,11 +42,11 @@ internal sealed class HashTable
     /// Constructs a hash table of the given size in bytes.
     /// </summary>
     /// <param name="bytes">The size of the new hash table in bytes.</param>
-    public HashTable(Int32 bytes)
+    public HashTable(int bytes)
     {
         if (bytes < HashEntry.Size)
             throw new ArgumentOutOfRangeException(nameof(bytes), bytes, "The hash table must hold at least one entry.");
-        _capacity = (UInt64)(bytes / HashEntry.Size);
+        _capacity = (ulong)(bytes / HashEntry.Size);
         _entries = new HashEntry[Capacity];
     }
 
@@ -57,7 +57,7 @@ internal sealed class HashTable
     /// <param name="key">The key to find the entry for.</param>
     /// <param name="entry">Contains the entry found when the method returns.</param>
     /// <returns>Whether the entry was found in the hash table.</returns>
-    public bool TryProbe(UInt64 key, out HashEntry entry)
+    public bool TryProbe(ulong key, out HashEntry entry)
     {
         entry = _entries[key % _capacity];
         return entry.Type != HashEntry.Invalid && entry.Key == key;
@@ -69,7 +69,7 @@ internal sealed class HashTable
     /// <param name="entry">The entry to store.</param>
     public void Store(HashEntry entry)
     {
-        UInt64 index = entry.Key % _capacity;
+        ulong index = entry.Key % _capacity;
         if (_entries[index].Type == HashEntry.Invalid)
             Count++;
         _entries[index] = entry;

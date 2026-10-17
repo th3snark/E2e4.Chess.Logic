@@ -13,82 +13,82 @@ public static class Move
     /// <summary>
     /// The value representing an invalid move.
     /// </summary>
-    public const Int32 Invalid = 0;
+    public const int Invalid = 0;
 
     /// <summary>
     /// The amount the to square is shifted when encoding the move.
     /// </summary>
-    private const Int32 ToShift = 6;
+    private const int ToShift = 6;
 
     /// <summary>
     /// The amount the moving piece is shifted when encoding the move.
     /// </summary>
-    private const Int32 PieceShift = ToShift + 6;
+    private const int PieceShift = ToShift + 6;
 
     /// <summary>
     /// The amount the captured piece is shifted when encoding the move.
     /// </summary>
-    private const Int32 CaptureShift = PieceShift + 4;
+    private const int CaptureShift = PieceShift + 4;
 
     /// <summary>
     /// The amount the special piece is shifted when encoding the move.
     /// </summary>
-    private const Int32 SpecialShift = CaptureShift + 4;
+    private const int SpecialShift = CaptureShift + 4;
 
     /// <summary>
     /// The mask for extracting the unshifted square from a move.
     /// </summary>
-    private const Int32 SquareMask = (1 << 6) - 1;
+    private const int SquareMask = (1 << 6) - 1;
 
     /// <summary>
     /// The mask for extracting an unshifted piece from a move.
     /// </summary>
-    private const Int32 PieceMask = (1 << 4) - 1;
+    private const int PieceMask = (1 << 4) - 1;
 
     /// <summary>
     /// The mask for extracting the shifted type of the captured piece from a
     /// move.
     /// </summary>
-    private const Int32 TypeCaptureShifted = Piece.Mask << CaptureShift;
+    private const int TypeCaptureShifted = Piece.Mask << CaptureShift;
 
     /// <summary>
     /// The value of the captured empty piece exactly as it is represented in
     /// the move.
     /// </summary>
-    private const Int32 EmptyCaptureShifted = Piece.Empty << CaptureShift;
+    private const int EmptyCaptureShifted = Piece.Empty << CaptureShift;
 
     /// <summary>
     /// The mask for extracting the shifted type of the special piece from a move.
     /// </summary>
-    private const Int32 TypeSpecialShifted = Piece.Mask << SpecialShift;
+    private const int TypeSpecialShifted = Piece.Mask << SpecialShift;
 
     /// <summary>
     /// The value of the king special (castling) exactly as it is represented in
     /// the move.
     /// </summary>
-    private const Int32 KingSpecialShifted = Piece.King << SpecialShift;
+    private const int KingSpecialShifted = Piece.King << SpecialShift;
 
     /// <summary>
     /// The value of the pawn special (en passant) exactly as it is represented
     /// in the move.
     /// </summary>
-    private const Int32 PawnSpecialShifted = Piece.Pawn << SpecialShift;
+    private const int PawnSpecialShifted = Piece.Pawn << SpecialShift;
 
     /// <summary>
     /// The value of the queen special (promotion to queen) exactly as it is
     /// represented in the move.
     /// </summary>
-    private const Int32 QueenSpecialShifted = Piece.Queen << SpecialShift;
+    private const int QueenSpecialShifted = Piece.Queen << SpecialShift;
 
     /// <summary>
     /// The mask for extracting the shifted type of the moving piece from a move.
     /// </summary>
-    private const Int32 TypePieceShifted = Piece.Mask << PieceShift;
+    private const int TypePieceShifted = Piece.Mask << PieceShift;
 
     /// <summary>
     /// The value of the moving pawn exactly as it is represented in the move.
     /// </summary>
-    private const Int32 PawnPieceShifted = Piece.Pawn << PieceShift;
+    private const int PawnPieceShifted = Piece.Pawn << PieceShift;
 
     /// <summary>
     /// Returns the pawn's move bitboard for the given square as the given
@@ -97,7 +97,7 @@ public static class Move
     /// <param name="square">The square the pawn is on.</param>
     /// <param name="colour">The colour of the pawn.</param>
     /// <returns>The pawn's move bitboard.</returns>
-    public static UInt64 Pawn(Int32 square, Int32 colour)
+    public static ulong Pawn(int square, int colour)
     {
         return 1UL << (square + 16 * colour - 8);
     }
@@ -111,11 +111,11 @@ public static class Move
     /// <param name="special">The special piece of the move.</param>
     /// <returns>A move encoded from the given parameters.</returns>
     /// <exception cref="ArgumentOutOfRangeException">A square is outside 0 to 63.</exception>
-    public static Int32 Create(Position position, Int32 from, Int32 to, Int32 special = Piece.Empty)
+    public static int Create(Position position, int from, int to, int special = Piece.Empty)
     {
-        if ((UInt32)from > 63)
+        if ((uint)from > 63)
             throw new ArgumentOutOfRangeException(nameof(from));
-        if ((UInt32)to > 63)
+        if ((uint)to > 63)
             throw new ArgumentOutOfRangeException(nameof(to));
         return from | (to << ToShift) | (position.Board[from] << PieceShift) | (position.Board[to] << CaptureShift) | (special << SpecialShift);
     }
@@ -127,21 +127,21 @@ public static class Move
     /// <param name="position">The position the move is to be played on.</param>
     /// <param name="name">The representation of the move in coordinate notation.</param>
     /// <returns>A move that has the given representation in coordinate notation.</returns>
-    public static Int32 Create(Position position, String? name)
+    public static int Create(Position position, string? name)
     {
         // Coordinate notation is "e2e4", with a promotion piece suffix such as "e7e8q"; case is ignored.
         if (name == null || (name.Length != 4 && name.Length != 5))
             return Invalid;
 
-        Int32 from = ParseSquare(name[0], name[1]);
-        Int32 to = ParseSquare(name[2], name[3]);
+        int from = ParseSquare(name[0], name[1]);
+        int to = ParseSquare(name[2], name[3]);
         if (from < 0 || to < 0)
             return Invalid;
 
-        Int32 promotion = Piece.Empty;
+        int promotion = Piece.Empty;
         if (name.Length == 5)
         {
-            switch (Char.ToLowerInvariant(name[4]))
+            switch (char.ToLowerInvariant(name[4]))
             {
                 case 'q': promotion = Piece.Queen; break;
                 case 'r': promotion = Piece.Rook; break;
@@ -151,11 +151,11 @@ public static class Move
             }
         }
 
-        Int32[] moves = new Int32[Position.MaxMoves];
-        Int32 count = position.LegalMoves(moves);
-        for (Int32 i = 0; i < count; i++)
+        int[] moves = new int[Position.MaxMoves];
+        int count = position.LegalMoves(moves);
+        for (int i = 0; i < count; i++)
         {
-            Int32 move = moves[i];
+            int move = moves[i];
             if (From(move) == from && To(move) == to
              && (IsPromotion(move) ? (SpecialPiece(move) & Piece.Mask) == promotion : promotion == Piece.Empty))
                 return move;
@@ -166,9 +166,9 @@ public static class Move
     /// <summary>
     /// Returns the square for a file letter and rank digit, or -1 if they do not name a square.
     /// </summary>
-    private static Int32 ParseSquare(Char file, Char rank)
+    private static int ParseSquare(char file, char rank)
     {
-        file = Char.ToLowerInvariant(file);
+        file = char.ToLowerInvariant(file);
         if (file < 'a' || file > 'h' || rank < '1' || rank > '8')
             return -1;
         return file - 'a' + ('8' - rank) * 8;
@@ -179,7 +179,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>The from square of the given move.</returns>
-    public static Int32 From(Int32 move)
+    public static int From(int move)
     {
         return move & SquareMask;
     }
@@ -189,7 +189,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>The to square of the given move.</returns>
-    public static Int32 To(Int32 move)
+    public static int To(int move)
     {
         return (move >> ToShift) & SquareMask;
     }
@@ -199,7 +199,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>The moving piece of the given move.</returns>
-    public static Int32 MovingPiece(Int32 move)
+    public static int MovingPiece(int move)
     {
         return (move >> PieceShift) & PieceMask;
     }
@@ -209,7 +209,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>The captured piece of the given move.</returns>
-    public static Int32 CapturedPiece(Int32 move)
+    public static int CapturedPiece(int move)
     {
         return (move >> CaptureShift) & PieceMask;
     }
@@ -219,7 +219,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>The special piece of the given move.</returns>
-    public static Int32 SpecialPiece(Int32 move)
+    public static int SpecialPiece(int move)
     {
         return move >> SpecialShift;
     }
@@ -229,7 +229,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>Whether the given move captures an opposing piece.</returns>
-    public static Boolean IsCapture(Int32 move)
+    public static bool IsCapture(int move)
     {
         return (move & TypeCaptureShifted) != EmptyCaptureShifted;
     }
@@ -239,7 +239,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>Whether the given move is a castling move.</returns>
-    public static Boolean IsCastle(Int32 move)
+    public static bool IsCastle(int move)
     {
         return (move & TypeSpecialShifted) == KingSpecialShifted;
     }
@@ -249,11 +249,11 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>Whether the given move promotes a pawn.</returns>
-    public static Boolean IsPromotion(Int32 move)
+    public static bool IsPromotion(int move)
     {
         if ((move & TypePieceShifted) != PawnPieceShifted)
             return false;
-        Int32 to = (move >> ToShift) & SquareMask;
+        int to = (move >> ToShift) & SquareMask;
         return (to - 8) * (to - 55) > 0;
     }
 
@@ -262,7 +262,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>Whether the given move is en passant.</returns>
-    public static Boolean IsEnPassant(Int32 move)
+    public static bool IsEnPassant(int move)
     {
         return (move & TypeSpecialShifted) == PawnSpecialShifted;
     }
@@ -272,7 +272,7 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to decode.</param>
     /// <returns>Whether the given move promotes a pawn to a queen.</returns>
-    public static Boolean IsQueenPromotion(Int32 move)
+    public static bool IsQueenPromotion(int move)
     {
         return (move & TypeSpecialShifted) == QueenSpecialShifted;
     }
@@ -282,10 +282,10 @@ public static class Move
     /// </summary>
     /// <param name="move">The move to identify.</param>
     /// <returns>The text representation of the given move in coordinate notation.</returns>
-    public static String GetCoordinateNotation(Int32 move)
+    public static string GetCoordinateNotation(int move)
     {
-        String coordinates = Square.GetName(Move.From(move)) + Square.GetName(Move.To(move));
-        Int32 special = Move.SpecialPiece(move);
+        string coordinates = Square.GetName(Move.From(move)) + Square.GetName(Move.To(move));
+        int special = Move.SpecialPiece(move);
 
         switch (special & Piece.Mask)
         {
@@ -305,12 +305,12 @@ public static class Move
     /// </summary>
     /// <param name="moves">The sequence of moves to identify.</param>
     /// <returns>The text representation of the given sequence of moves in coordinate notation.</returns>
-    public static string GetCoordinateNotation(List<Int32> moves)
+    public static string GetCoordinateNotation(List<int> moves)
     {
         if (moves.Count == 0)
             return "";
         StringBuilder sb = new StringBuilder(6 * moves.Count);
-        foreach (Int32 move in moves)
+        foreach (int move in moves)
         {
             sb.Append(Move.GetCoordinateNotation(move));
             sb.Append(' ');
@@ -324,30 +324,30 @@ public static class Move
     /// <param name="position">The position on which the move is to be played.</param>
     /// <param name="move">The move to identify.</param>
     /// <returns>The text representation of the given move in algebraic notation</returns>
-    public static string GetAlgebraicNotation(Position position, Int32 move)
+    public static string GetAlgebraicNotation(Position position, int move)
     {
         if (Move.IsCastle(move))
             return (Move.To(move) < Move.From(move) ? "O-O-O" : "O-O") + GetCheckSuffix(position, move);
 
         // Determine the piece associated with the move. Pawns are not explicitly
         // identified.
-        String piece = (Move.MovingPiece(move) & Piece.Mask) == Piece.Pawn ? "" : Piece.GetInitial(Move.MovingPiece(move));
+        string piece = (Move.MovingPiece(move) & Piece.Mask) == Piece.Pawn ? "" : Piece.GetInitial(Move.MovingPiece(move));
 
         // Determine the necessary disambiguation property for the move. If two or
         // more pieces of the same type are moving to the same square, disambiguate
         // with the square that it is moving from's file, rank, or both, in that
         // order.
-        String disambiguation = "";
-        List<Int32> alternatives = new List<Int32>();
-        foreach (Int32 alt in position.LegalMoves())
+        string disambiguation = "";
+        List<int> alternatives = new List<int>();
+        foreach (int alt in position.LegalMoves())
             if (Move.From(alt) != Move.From(move) && Move.MovingPiece(alt) == Move.MovingPiece(move) && Move.To(alt) == Move.To(move))
                 alternatives.Add(alt);
 
         if (alternatives.Count > 0)
         {
-            Boolean uniqueFile = true;
-            Boolean uniqueRank = true;
-            foreach (Int32 alt in alternatives)
+            bool uniqueFile = true;
+            bool uniqueRank = true;
+            foreach (int alt in alternatives)
             {
                 if (Square.File(Move.From(alt)) == Square.File(Move.From(move)))
                     uniqueFile = false;
@@ -364,17 +364,17 @@ public static class Move
 
         // Determine if the capture flag is necessary for the move. If the capturing
         // piece is a pawn, it is identified by the file it is moving from.
-        Boolean isCapture = Move.IsCapture(move) || Move.IsEnPassant(move);
-        String capture = isCapture ? "x" : "";
+        bool isCapture = Move.IsCapture(move) || Move.IsEnPassant(move);
+        string capture = isCapture ? "x" : "";
         if ((Move.MovingPiece(move) & Piece.Mask) == Piece.Pawn && isCapture)
             if (disambiguation == "")
                 disambiguation = Square.GetFileName(Move.From(move));
 
         // Determine the square property for the move.
-        String square = Square.GetName(Move.To(move));
+        string square = Square.GetName(Move.To(move));
 
         // Determine the necessary promotion property for the move.
-        String promotion = Move.IsPromotion(move) ? "=" + Piece.GetInitial(Move.SpecialPiece(move)) : "";
+        string promotion = Move.IsPromotion(move) ? "=" + Piece.GetInitial(Move.SpecialPiece(move)) : "";
 
         return piece + disambiguation + capture + square + promotion + GetCheckSuffix(position, move);
     }
@@ -383,9 +383,9 @@ public static class Move
     /// Returns "+" if the given move gives check, "#" if it gives checkmate, and
     /// the empty string otherwise.
     /// </summary>
-    private static String GetCheckSuffix(Position position, Int32 move)
+    private static string GetCheckSuffix(Position position, int move)
     {
-        String check = "";
+        string check = "";
         position.Make(move);
         try
         {
@@ -408,14 +408,14 @@ public static class Move
     /// <remarks>The moves are played on <paramref name="position"/> and always taken back, even if
     /// an exception occurs, but the position is changed in between and is not thread-safe.</remarks>
     /// <returns>The text representation of the given sequence of moves in algebraic notation</returns>
-    public static string GetAlgebraicNotation(Position position, List<Int32> moves, AlgebraicNotationFormat moveFormat = AlgebraicNotationFormat.None)
+    public static string GetAlgebraicNotation(Position position, List<int> moves, AlgebraicNotationFormat moveFormat = AlgebraicNotationFormat.None)
     {
         if (moves.Count == 0)
             return "";
 
         StringBuilder sb = new StringBuilder();
-        Boolean proper = moveFormat == AlgebraicNotationFormat.Proper;
-        Int32 halfMoves = position.HalfMoves;
+        bool proper = moveFormat == AlgebraicNotationFormat.Proper;
+        int halfMoves = position.HalfMoves;
 
         if (position.SideToMove == Colour.Black)
         {
@@ -423,10 +423,10 @@ public static class Move
             sb.Append(proper ? "... " : "...");
         }
 
-        Int32 made = 0;
+        int made = 0;
         try
         {
-            foreach (Int32 move in moves)
+            foreach (int move in moves)
             {
                 if ((halfMoves++ % 2) == 0)
                 {
@@ -443,7 +443,7 @@ public static class Move
         }
         finally
         {
-            for (Int32 i = made - 1; i >= 0; i--)
+            for (int i = made - 1; i >= 0; i--)
                 position.Unmake(moves[i]);
         }
 

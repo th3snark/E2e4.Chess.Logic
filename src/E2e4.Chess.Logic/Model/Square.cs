@@ -13,7 +13,7 @@ public static class Square
     /// </summary>
     /// <param name="square">The square to determine the file of.</param>
     /// <returns>The file of the given square.</returns>
-    public static Int32 File(Int32 square)
+    public static int File(int square)
     {
         return square & 7;
     }
@@ -23,7 +23,7 @@ public static class Square
     /// </summary>
     /// <param name="square">The square to determine the rank of.</param>
     /// <returns>The rank of the given square.</returns>
-    public static Int32 Rank(Int32 square)
+    public static int Rank(int square)
     {
         return square >> 3;
     }
@@ -34,13 +34,13 @@ public static class Square
     /// <param name="name">The name of the square.</param>
     /// <returns>The square with the given name</returns>
     /// <exception cref="ArgumentException">The name is not a square from a8 to h1.</exception>
-    public static Int32 SquareAt(string name)
+    public static int SquareAt(string name)
     {
         if (name == null)
             throw new ArgumentNullException(nameof(name));
         if (name.Length != 2 || name[0] < 'a' || name[0] > 'h' || name[1] < '1' || name[1] > '8')
             throw new ArgumentException("'" + name + "' is not a square name.", nameof(name));
-        return (Int32)(name[0] - 'a' + ('8' - name[1]) * 8);
+        return (int)(name[0] - 'a' + ('8' - name[1]) * 8);
     }
 
     /// <summary>
@@ -48,9 +48,9 @@ public static class Square
     /// </summary>
     /// <param name="square">The square to identify.</param>
     /// <returns>The name of the file for the given square.</returns>
-    public static string GetFileName(Int32 square)
+    public static string GetFileName(int square)
     {
-        return ((Char)(File(square) + 'a')).ToString();
+        return ((char)(File(square) + 'a')).ToString();
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public static class Square
     /// </summary>
     /// <param name="square">The square to identify.</param>
     /// <returns>The name of the rank for the given square.</returns>
-    public static string GetRankName(Int32 square)
+    public static string GetRankName(int square)
     {
         return (8 - Rank(square)).ToString(CultureInfo.InvariantCulture);
     }
@@ -69,7 +69,7 @@ public static class Square
     /// </summary>
     /// <param name="square">The square to identify.</param>
     /// <returns>The name of the given square.</returns>
-    public static string GetName(Int32 square)
+    public static string GetName(int square)
     {
         return GetFileName(square) + GetRankName(square);
     }

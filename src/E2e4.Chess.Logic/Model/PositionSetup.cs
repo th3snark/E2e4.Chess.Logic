@@ -14,11 +14,11 @@ namespace E2e4.Chess.Logic.Model;
 /// </summary>
 public sealed class PositionSetup
 {
-    private const Int32 NoSquare = Position.InvalidSquare;
+    private const int NoSquare = Position.InvalidSquare;
 
-    private readonly Int32[] _squares = new Int32[64];
-    private Int32 _sideToMove;
-    private Int32 _enPassantSquare;
+    private readonly int[] _squares = new int[64];
+    private int _sideToMove;
+    private int _enPassantSquare;
 
     /// <summary>Creates an empty board, White to move, with no castling rights.</summary>
     public PositionSetup()
@@ -29,7 +29,7 @@ public sealed class PositionSetup
 
     /// <summary>The side to move: <see cref="Colour.White"/> or <see cref="Colour.Black"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is neither colour.</exception>
-    public Int32 SideToMove
+    public int SideToMove
     {
         get => _sideToMove;
         set
@@ -45,7 +45,7 @@ public sealed class PositionSetup
 
     /// <summary>The en passant target square, or <see cref="Position.InvalidSquare"/> for none.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is neither a square nor <see cref="Position.InvalidSquare"/>.</exception>
-    public Int32 EnPassantSquare
+    public int EnPassantSquare
     {
         get => _enPassantSquare;
         set
@@ -57,16 +57,16 @@ public sealed class PositionSetup
     }
 
     /// <summary>Half moves since the last capture or pawn move.</summary>
-    public Int32 FiftyMovesClock { get; set; }
+    public int FiftyMovesClock { get; set; }
 
     /// <summary>The full move number, starting at 1.</summary>
-    public Int32 MoveNumber { get; set; }
+    public int MoveNumber { get; set; }
 
     /// <summary>
     /// The piece on a square (<see cref="Piece.Empty"/> or a colour | piece value), squares numbered as in
     /// <see cref="Position.Squares"/> (a8 = 0, h1 = 63).
     /// </summary>
-    public Int32 this[Int32 square]
+    public int this[int square]
     {
         get
         {
@@ -82,7 +82,7 @@ public sealed class PositionSetup
         }
     }
 
-    private static void CheckSquare(Int32 square)
+    private static void CheckSquare(int square)
     {
         if (square < 0 || square > 63)
             throw new ArgumentOutOfRangeException(nameof(square));
@@ -136,7 +136,7 @@ public sealed class PositionSetup
     /// side to move must be 'w' or 'b' (a missing side to move means White, so a bare placement is accepted), but the
     /// position need not be legal. The other fields are optional; a malformed one fails the parse.
     /// </summary>
-    public static Boolean TryParse(String? fen, [NotNullWhen(true)] out PositionSetup? setup)
+    public static bool TryParse(string? fen, [NotNullWhen(true)] out PositionSetup? setup)
     {
         setup = null;
         if (fen == null)
@@ -145,7 +145,7 @@ public sealed class PositionSetup
         if (fen.Length > Position.MaxFenLength)
             return false;
 
-        String[] terms = fen.Split((Char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        string[] terms = fen.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length < 1)
             return false;
 
@@ -176,16 +176,16 @@ public sealed class PositionSetup
             }
         }
 
-        Int32 number;
+        int number;
         if (terms.Length > 4)
         {
-            if (!Int32.TryParse(terms[4], NumberStyles.None, CultureInfo.InvariantCulture, out number))
+            if (!int.TryParse(terms[4], NumberStyles.None, CultureInfo.InvariantCulture, out number))
                 return false;
             candidate.FiftyMovesClock = number;
         }
         if (terms.Length > 5)
         {
-            if (!Int32.TryParse(terms[5], NumberStyles.None, CultureInfo.InvariantCulture, out number) || number < 1)
+            if (!int.TryParse(terms[5], NumberStyles.None, CultureInfo.InvariantCulture, out number) || number < 1)
                 return false;
             candidate.MoveNumber = number;
         }
@@ -194,11 +194,11 @@ public sealed class PositionSetup
         return true;
     }
 
-    private Boolean TryParsePlacement(String placement)
+    private bool TryParsePlacement(string placement)
     {
-        Int32 file = 0;
-        Int32 rank = 0;
-        foreach (Char c in placement)
+        int file = 0;
+        int rank = 0;
+        foreach (char c in placement)
         {
             if (c == '/')
             {
@@ -215,24 +215,24 @@ public sealed class PositionSetup
             }
             else
             {
-                Int32 piece = Piece.FromInitial(c);
+                int piece = Piece.FromInitial(c);
                 if (piece == Piece.Empty)
                     return false;
                 if (file >= 8)
                     return false;
-                _squares[file++ + rank * 8] = (Char.IsUpper(c) ? Colour.White : Colour.Black) | piece;
+                _squares[file++ + rank * 8] = (char.IsUpper(c) ? Colour.White : Colour.Black) | piece;
             }
         }
         return rank == 7 && file == 8;
     }
 
-    private Boolean TryParseCastling(String rights)
+    private bool TryParseCastling(string rights)
     {
         if (rights == "-")
             return true;
         if (rights.Length == 0 || rights.Length > 4)
             return false;
-        foreach (Char c in rights)
+        foreach (char c in rights)
         {
             switch (c)
             {
@@ -247,15 +247,15 @@ public sealed class PositionSetup
     }
 
     /// <summary>Returns the FEN string of the setup, whether or not it is legal.</summary>
-    public String ToFen()
+    public string ToFen()
     {
         StringBuilder sb = new StringBuilder();
-        for (Int32 rank = 0; rank < 8; rank++)
+        for (int rank = 0; rank < 8; rank++)
         {
-            Int32 spaces = 0;
-            for (Int32 file = 0; file < 8; file++)
+            int spaces = 0;
+            for (int file = 0; file < 8; file++)
             {
-                Int32 piece = _squares[file + rank * 8];
+                int piece = _squares[file + rank * 8];
                 if (piece == Piece.Empty)
                 {
                     spaces++;
@@ -291,10 +291,10 @@ public sealed class PositionSetup
         return sb.ToString();
     }
 
-    private static Char PieceLetter(Int32 piece)
+    private static char PieceLetter(int piece)
     {
-        Char letter = Piece.GetInitial(piece)[0];
-        return (piece & Colour.Mask) == Colour.White ? letter : Char.ToLowerInvariant(letter);
+        char letter = Piece.GetInitial(piece)[0];
+        return (piece & Colour.Mask) == Colour.White ? letter : char.ToLowerInvariant(letter);
     }
 
     /// <summary>
@@ -313,7 +313,7 @@ public sealed class PositionSetup
         }
     }
 
-    private Boolean Holds(Int32 square, Int32 piece)
+    private bool Holds(int square, int piece)
     {
         return _squares[square] == piece;
     }
@@ -335,12 +335,12 @@ public sealed class PositionSetup
     /// The files (0 = a ... 7 = h) on which an en passant capture could be claimed for the current side to move:
     /// a pawn of the other side stands just past an empty target square with its origin square empty too.
     /// </summary>
-    public IReadOnlyList<Int32> PossibleEnPassantFiles
+    public IReadOnlyList<int> PossibleEnPassantFiles
     {
         get
         {
-            List<Int32> files = new List<Int32>();
-            for (Int32 file = 0; file < 8; file++)
+            List<int> files = new List<int>();
+            for (int file = 0; file < 8; file++)
             {
                 if (IsEnPassantConsistent(TargetOnFile(file)))
                     files.Add(file);
@@ -349,22 +349,22 @@ public sealed class PositionSetup
         }
     }
 
-    private Int32 TargetOnFile(Int32 file)
+    private int TargetOnFile(int file)
     {
         // After White moves (Black to move) the target is on rank 3 (row 5), otherwise on rank 6 (row 2).
         return file + (SideToMove == Colour.Black ? 5 : 2) * 8;
     }
 
-    private Boolean IsEnPassantConsistent(Int32 target)
+    private bool IsEnPassantConsistent(int target)
     {
         if (target < 0 || target > 63)
             return false;
-        Boolean blackToMove = SideToMove == Colour.Black;
+        bool blackToMove = SideToMove == Colour.Black;
         if (Square.Rank(target) != (blackToMove ? 5 : 2))
             return false;
-        Int32 pushed = blackToMove ? target - 8 : target + 8;
-        Int32 origin = blackToMove ? target + 8 : target - 8;
-        Int32 pawn = (blackToMove ? Colour.White : Colour.Black) | Piece.Pawn;
+        int pushed = blackToMove ? target - 8 : target + 8;
+        int origin = blackToMove ? target + 8 : target - 8;
+        int pawn = (blackToMove ? Colour.White : Colour.Black) | Piece.Pawn;
         return _squares[target] == Piece.Empty && _squares[origin] == Piece.Empty && _squares[pushed] == pawn;
     }
 
@@ -381,7 +381,7 @@ public sealed class PositionSetup
             Position? position = ToPosition();
             if (position != null && position.LegalMoves().Count == 0)
             {
-                String message = position.InCheck(SideToMove)
+                string message = position.InCheck(SideToMove)
                     ? "The side to move is checkmated."
                     : "The side to move is stalemated.";
                 problems.Add(new PositionProblem(PositionProblemKind.NoLegalMoves, PositionProblemSeverity.Warning, message));
@@ -394,17 +394,17 @@ public sealed class PositionSetup
     private List<PositionProblem> FindErrors()
     {
         List<PositionProblem> problems = new List<PositionProblem>();
-        Int32[][] counts = { new Int32[Piece.King + 1], new Int32[Piece.King + 1] };
-        Int32[] kingSquare = { NoSquare, NoSquare };
-        Boolean pawnOnEdge = false;
+        int[][] counts = { new int[Piece.King + 1], new int[Piece.King + 1] };
+        int[] kingSquare = { NoSquare, NoSquare };
+        bool pawnOnEdge = false;
 
-        for (Int32 square = 0; square < 64; square++)
+        for (int square = 0; square < 64; square++)
         {
-            Int32 piece = _squares[square];
+            int piece = _squares[square];
             if (piece == Piece.Empty)
                 continue;
-            Int32 colour = piece & Colour.Mask;
-            Int32 kind = piece & Piece.Mask;
+            int colour = piece & Colour.Mask;
+            int kind = piece & Piece.Mask;
             counts[colour][kind]++;
             if (kind == Piece.King)
                 kingSquare[colour] = square;
@@ -412,10 +412,10 @@ public sealed class PositionSetup
                 pawnOnEdge = true;
         }
 
-        Boolean kingsPresent = true;
-        for (Int32 colour = Colour.White; colour <= Colour.Black; colour++)
+        bool kingsPresent = true;
+        for (int colour = Colour.White; colour <= Colour.Black; colour++)
         {
-            String name = Colour.GetName(colour);
+            string name = Colour.GetName(colour);
             if (counts[colour][Piece.King] == 0)
             {
                 problems.Add(new PositionProblem(PositionProblemKind.MissingKing, PositionProblemSeverity.Error, "There is no " + name + " king."));
@@ -435,12 +435,12 @@ public sealed class PositionSetup
         if (pawnOnEdge)
             problems.Add(new PositionProblem(PositionProblemKind.PawnOnLastRank, PositionProblemSeverity.Error, "A pawn cannot stand on the first or last rank."));
 
-        Boolean materialOk = true;
-        for (Int32 colour = Colour.White; colour <= Colour.Black; colour++)
+        bool materialOk = true;
+        for (int colour = Colour.White; colour <= Colour.Black; colour++)
         {
-            Int32[] side = counts[colour];
-            Int32 pawns = side[Piece.Pawn];
-            Int32 promoted = Math.Max(0, side[Piece.Queen] - 1) + Math.Max(0, side[Piece.Rook] - 2)
+            int[] side = counts[colour];
+            int pawns = side[Piece.Pawn];
+            int promoted = Math.Max(0, side[Piece.Queen] - 1) + Math.Max(0, side[Piece.Rook] - 2)
                            + Math.Max(0, side[Piece.Bishop] - 2) + Math.Max(0, side[Piece.Knight] - 2);
             if (pawns > 8)
             {
@@ -463,9 +463,9 @@ public sealed class PositionSetup
 
         if (kingsPresent)
         {
-            Int32 fileGap = Math.Abs(Square.File(kingSquare[Colour.White]) - Square.File(kingSquare[Colour.Black]));
-            Int32 rankGap = Math.Abs(Square.Rank(kingSquare[Colour.White]) - Square.Rank(kingSquare[Colour.Black]));
-            Boolean adjacent = fileGap <= 1 && rankGap <= 1;
+            int fileGap = Math.Abs(Square.File(kingSquare[Colour.White]) - Square.File(kingSquare[Colour.Black]));
+            int rankGap = Math.Abs(Square.Rank(kingSquare[Colour.White]) - Square.Rank(kingSquare[Colour.Black]));
+            bool adjacent = fileGap <= 1 && rankGap <= 1;
             if (adjacent)
                 problems.Add(new PositionProblem(PositionProblemKind.KingsAdjacent, PositionProblemSeverity.Error, "The two kings cannot stand next to each other."));
 
@@ -474,7 +474,7 @@ public sealed class PositionSetup
                 Position? board = PositionWithoutExtras();
                 if (board != null)
                 {
-                    Int32 waiting = 1 - SideToMove;
+                    int waiting = 1 - SideToMove;
                     if (board.InCheck(waiting))
                         problems.Add(new PositionProblem(PositionProblemKind.SideNotToMoveInCheck, PositionProblemSeverity.Error, "The " + Colour.GetName(waiting) + " king is in check but it is not " + Colour.GetName(waiting) + "'s move."));
                 }

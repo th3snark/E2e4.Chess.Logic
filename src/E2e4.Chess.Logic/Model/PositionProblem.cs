@@ -53,7 +53,7 @@ public enum PositionProblemKind
 public sealed class PositionProblem
 {
     /// <summary>Creates a problem.</summary>
-    public PositionProblem(PositionProblemKind kind, PositionProblemSeverity severity, String message)
+    public PositionProblem(PositionProblemKind kind, PositionProblemSeverity severity, string message)
     {
         Kind = kind;
         Severity = severity;
@@ -67,10 +67,10 @@ public sealed class PositionProblem
     public PositionProblemSeverity Severity { get; }
 
     /// <summary>A sentence describing it, for display.</summary>
-    public String Message { get; }
+    public string Message { get; }
 
     /// <inheritdoc />
-    public override String ToString()
+    public override string ToString()
     {
         return Message;
     }

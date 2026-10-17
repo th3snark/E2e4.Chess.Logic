@@ -18,7 +18,7 @@ public sealed partial class Position : IEquatable<Position>
     private static CastlingRights[] BuildCastlingMask()
     {
         CastlingRights[] mask = new CastlingRights[64];
-        for (Int32 square = 0; square < mask.Length; square++)
+        for (int square = 0; square < mask.Length; square++)
             mask[square] = CastlingRights.All;
 
         mask[0] = CastlingRights.All & ~CastlingRights.BlackQueenside;                                // a8
@@ -35,9 +35,9 @@ public sealed partial class Position : IEquatable<Position>
     /// rook moves between: the corner and the square the king crossed. Queenside is the king moving towards a lower
     /// square number.
     /// </summary>
-    private static void CastlingRookSquares(Int32 from, Int32 to, out Int32 rookFrom, out Int32 rookTo)
+    private static void CastlingRookSquares(int from, int to, out int rookFrom, out int rookTo)
     {
-        Int32 rankStart = Square.Rank(to) * 8;
+        int rankStart = Square.Rank(to) * 8;
         if (to < from)
         {
             rookFrom = rankStart;
@@ -57,16 +57,16 @@ public sealed partial class Position : IEquatable<Position>
     /// <param name="move">The move to make.</param>
     /// <exception cref="InvalidOperationException">The position has reached
     /// <see cref="HalfMovesLimit"/> plies.</exception>
-    public void Make(Int32 move)
+    public void Make(int move)
     {
         if (HalfMoves >= HalfMovesLimit - 1)
             throw new InvalidOperationException("The position cannot advance beyond " + HalfMovesLimit + " plies.");
 
-        Int32 from = Move.From(move);
-        Int32 to = Move.To(move);
-        Int32 piece = Move.MovingPiece(move);
-        Int32 capture = Move.CapturedPiece(move);
-        Int32 special = Move.SpecialPiece(move);
+        int from = Move.From(move);
+        int to = Move.To(move);
+        int piece = Move.MovingPiece(move);
+        int capture = Move.CapturedPiece(move);
+        int special = Move.SpecialPiece(move);
 
         // Update core board state.
         Board[to] = piece;
@@ -92,7 +92,7 @@ public sealed partial class Position : IEquatable<Position>
         CastlingRights rights = Castling & CastlingMask[from] & CastlingMask[to];
         if (rights != Castling)
         {
-            ZobristKey ^= Zobrist.Castling[(Int32)Castling] ^ Zobrist.Castling[(Int32)rights];
+            ZobristKey ^= Zobrist.Castling[(int)Castling] ^ Zobrist.Castling[(int)rights];
             Castling = rights;
         }
 
@@ -127,7 +127,7 @@ public sealed partial class Position : IEquatable<Position>
                 break;
             // Handle castling: the king has moved, now move the rook.
             case Piece.King:
-                CastlingRookSquares(from, to, out Int32 rookFrom, out Int32 rookTo);
+                CastlingRookSquares(from, to, out int rookFrom, out int rookTo);
                 PieceBitboards[SideToMove | Piece.Rook] ^= (1UL << rookFrom) | (1UL << rookTo);
                 PieceBitboards[SideToMove] ^= (1UL << rookFrom) | (1UL << rookTo);
                 OccupiedBitboard ^= (1UL << rookFrom) | (1UL << rookTo);
@@ -139,7 +139,7 @@ public sealed partial class Position : IEquatable<Position>
             // Handle en passant: remove the pawn that was passed.
             case Piece.Pawn:
                 FiftyMovesClock = 0;
-                Int32 victim = Square.File(to) + Square.Rank(from) * 8;
+                int victim = Square.File(to) + Square.Rank(from) * 8;
                 Board[victim] = Piece.Empty;
                 PieceBitboards[special] ^= 1UL << victim;
                 PieceBitboards[(1 - SideToMove)] ^= 1UL << victim;
@@ -168,16 +168,16 @@ public sealed partial class Position : IEquatable<Position>
     /// </summary>
     /// <param name="move">The move to unmake.</param>
     /// <exception cref="InvalidOperationException">No move has been made on the position.</exception>
-    public void Unmake(Int32 move)
+    public void Unmake(int move)
     {
         if (HalfMoves <= _rootHalfMoves)
             throw new InvalidOperationException("There is no move to unmake.");
 
-        Int32 from = Move.From(move);
-        Int32 to = Move.To(move);
-        Int32 piece = Move.MovingPiece(move);
-        Int32 capture = Move.CapturedPiece(move);
-        Int32 special = Move.SpecialPiece(move);
+        int from = Move.From(move);
+        int to = Move.To(move);
+        int piece = Move.MovingPiece(move);
+        int capture = Move.CapturedPiece(move);
+        int special = Move.SpecialPiece(move);
 
         // Rewind core board state.
         SideToMove = 1 - SideToMove;
@@ -210,7 +210,7 @@ public sealed partial class Position : IEquatable<Position>
                 break;
             // Rewind castling: move the rook back.
             case Piece.King:
-                CastlingRookSquares(from, to, out Int32 rookFrom, out Int32 rookTo);
+                CastlingRookSquares(from, to, out int rookFrom, out int rookTo);
                 PieceBitboards[SideToMove | Piece.Rook] ^= (1UL << rookFrom) | (1UL << rookTo);
                 PieceBitboards[SideToMove] ^= (1UL << rookFrom) | (1UL << rookTo);
                 OccupiedBitboard ^= (1UL << rookFrom) | (1UL << rookTo);
@@ -219,7 +219,7 @@ public sealed partial class Position : IEquatable<Position>
                 break;
             // Rewind en passant: put the passed pawn back.
             case Piece.Pawn:
-                Int32 victim = Square.File(to) + Square.Rank(from) * 8;
+                int victim = Square.File(to) + Square.Rank(from) * 8;
                 Board[victim] = special;
                 PieceBitboards[special] ^= 1UL << victim;
                 PieceBitboards[(1 - SideToMove)] ^= 1UL << victim;
