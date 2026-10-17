@@ -28,6 +28,12 @@ public sealed partial class Position : IEquatable<Position>
     /// </summary>
     public const Int32 HalfMovesLimit = 1024;
 
+    /// <summary>The largest fifty-moves clock a FEN string may carry; larger values are rejected.</summary>
+    public const Int32 MaxFiftyMovesClock = 10000;
+
+    /// <summary>The longest FEN string that is parsed; longer text is rejected as invalid.</summary>
+    public const Int32 MaxFenLength = 256;
+
     /// <summary>
     /// The value representing an invalid square.
     /// </summary>

@@ -80,6 +80,9 @@ public sealed partial class Position : IEquatable<Position>
         if (fen == null)
             throw new FormatException("The FEN string is null.");
 
+        if (fen.Length > MaxFenLength)
+            throw new FormatException("The FEN string is longer than " + MaxFenLength + " characters.");
+
         // Split FEN into terms based on whitespace.
         String[] terms = fen.Split((Char[]?)null, StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length < 2)
@@ -103,7 +106,11 @@ public sealed partial class Position : IEquatable<Position>
 
         // Determine fifty-moves clock and plies advanced.
         if (terms.Length > 4)
+        {
             FiftyMovesClock = ParseCounter(terms[4], 0);
+            if (FiftyMovesClock > MaxFiftyMovesClock)
+                throw new FormatException("The fifty-moves clock exceeds the supported range.");
+        }
         if (terms.Length > 5)
         {
             Int64 halfMoves = 2L * (ParseCounter(terms[5], 1) - 1) + SideToMove;

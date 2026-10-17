@@ -45,6 +45,8 @@ public class PositionFenValidationUnitTest
         "rrr1k3/pppppppp/8/8/8/8/8/4K3 w - - 0 1",                               // eight pawns and three rooks
         "4k3/8/8/8/8/8/8/4RK2 w - - 0 1",                                        // black king in check, white to move
         "8/8/8/8/8/8/3k4/3K4 w - - 0 1",                                         // adjacent kings
+        BareKings + " w - - 10001 1",                                            // clock beyond MaxFiftyMovesClock
+        BareKings + " w - - 0 1 " + new string('x', 300),                        // longer than MaxFenLength
     };
 
     [Theory]

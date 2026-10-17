@@ -144,6 +144,40 @@ public class PositionSetupUnitTest
         Assert.Empty(Kinds("4k3/P7/8/8/8/8/8/4K3 w - - 0 1"));
     }
 
+    [Theory]
+    [InlineData(0, 0)]        // move number below 1
+    [InlineData(600, 0)]      // beyond HalfMovesLimit
+    [InlineData(1, -1)]       // negative clock
+    [InlineData(1, 10001)]    // clock beyond MaxFiftyMovesClock
+    public void OutOfRangeCountersAreReportedAndNeverBecomeAPosition(int moveNumber, int clock)
+    {
+        PositionSetup setup = Parse("4k3/8/8/8/8/8/8/4K3 w - - 0 1");
+        setup.MoveNumber = moveNumber;
+        setup.FiftyMovesClock = clock;
+
+        Assert.Contains(PositionProblemKind.InvalidCounters, setup.Validate().Select(p => p.Kind));
+        Assert.Null(setup.ToPosition());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("a")]
+    [InlineData("i1")]
+    [InlineData("a9")]
+    [InlineData("e22")]
+    public void SquareAtRejectsNamesThatAreNotSquares(string name)
+    {
+        Assert.Throws<ArgumentException>(() => Square.SquareAt(name));
+    }
+
+    [Fact]
+    public void MoveCreateRejectsSquaresOffTheBoard()
+    {
+        Position position = new Position(Position.StartingFEN);
+        Assert.Throws<ArgumentOutOfRangeException>(() => Move.Create(position, 64, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Move.Create(position, 0, -1));
+    }
+
     [Fact]
     public void TheSideNotToMoveMayNotBeInCheck()
     {
