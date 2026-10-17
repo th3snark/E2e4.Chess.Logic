@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`E2e4.Chess.Logic` is the chess rules library (NuGet package of the same name, MIT), split out of
-<https://github.com/th3snark/E2e4.Chess>. It is consumed there as a package (pinned in that repo's `Directory.Packages.props`): change it
-here, release it with a `vX.Y.Z` tag, then bump the version in E2e4.Chess.
+`E2e4.Chess.Logic` is the chess rules library (NuGet package of the same name, MIT). Its consumers take it as a package and pin the version in
+their own `Directory.Packages.props`: `E2e4.Chess.Controls`, `E2e4.Chess.Controls.Demo` and `E2e4.Chess.Controls.StyleDesigner` (all private). Change
+it here, release it with a `vX.Y.Z` tag, then bump the pin in each of them.
 
 ## Layout
 
@@ -18,7 +18,7 @@ here, release it with a `vX.Y.Z` tag, then bump the version in E2e4.Chess.
   counts as a move-generation bug. `PortableBitOperationsUnitTest` checks the portable bit tricks against the intrinsics, because the
   tests only run on net10.0 while the library also compiles for net45/netstandard.
 - `assets/icon.png` / `icon.svg` — the package icon: the E2e4.Chess base icon plus the Logic badge. It is built by
-  `Branding/Build-Icons.ps1` in the E2e4.Chess repo (badge `Branding/badges/E2e4.Chess.Logic.svg`); never draw a standalone icon.
+  `Branding/Build-Icons.ps1` in the E2e4.Chess repository (badge `Branding/badges/E2e4.Chess.Logic.svg`); never draw a standalone icon.
 
 ## Rules
 
@@ -26,7 +26,8 @@ here, release it with a `vX.Y.Z` tag, then bump the version in E2e4.Chess.
   `TargetFrameworks`. `BitOperations` is used under `#if NET`, `PortableBitOperations` everywhere else.
 - No dependencies, no WPF/WinForms/`System.Drawing`, no I/O. CI fails if the library gains a package dependency.
 - Public surface is small on purpose (`Position`, `Move`, `Piece`/`Colour`/`Square`, `PositionSetup`, `CastlingRights`, `PositionProblem`,
-  `AlgebraicNotationFormat`); `Bitboard`, `HashEntry`, `HashTable` and the raw board arrays are `internal` (tests use `InternalsVisibleTo`).
+  `AlgebraicNotationFormat`); `Bitboard` and the raw board arrays are `internal` (tests use `InternalsVisibleTo`). `HashEntry` and `HashTable` exist only in the test project
+(`tests/.../Support`), as a client of `Zobrist` for the hashing tests; the library itself has no transposition table.
 - Nullable is on and warnings are errors: the tree must build with 0 warnings. File-scoped namespaces are enforced by `.editorconfig`.
 - Source files use CRLF line endings (the editor tools tend to write LF; convert before committing, `git ls-files --eol` shows the state).
 - Fixtures and test data stay synthetic or public facts; keep the parser robust (bad FEN returns false, never throws or loops).

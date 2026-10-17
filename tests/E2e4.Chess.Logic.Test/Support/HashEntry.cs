@@ -4,13 +4,13 @@ using E2e4.Chess.Logic.Model;
 namespace E2e4.Chess.Logic.Hashing;
 
 /// <summary>
-/// Represents an entry in the transposition hash table: the key of a position, the best move 
-/// found for it and a packed type, search depth and value. 
+/// Represents an entry in the transposition hash table: the key of a position, the best move
+/// found for it and a packed type, search depth and value.
 /// </summary>
 internal readonly struct HashEntry
 {
     /// <summary>
-    /// Specifies the hash entry is invalid. 
+    /// Specifies the hash entry is invalid.
     /// </summary>
     public const Int32 Invalid = 0;
 
@@ -20,29 +20,29 @@ internal readonly struct HashEntry
     public const Int32 Exact = 1;
 
     /// <summary>
-    /// Specifies the value associated with the hash entry gives a lower bound 
+    /// Specifies the value associated with the hash entry gives a lower bound
     /// value.
     /// </summary>
     public const Int32 Alpha = 2;
 
     /// <summary>
-    /// Specifies the value associated with the hash entry gives an upper bound 
+    /// Specifies the value associated with the hash entry gives an upper bound
     /// value.
     /// </summary>
     public const Int32 Beta = 3;
 
     /// <summary>
-    /// The size of a hash entry in bytes. 
+    /// The size of a hash entry in bytes.
     /// </summary>
     public const Int32 Size = 16;
 
     /// <summary>
-    /// The number of bits used for encoding the type in the miscellaneous field. 
+    /// The number of bits used for encoding the type in the miscellaneous field.
     /// </summary>
     private const Int32 TypeBits = 2;
 
     /// <summary>
-    /// The number of bits used for encoding the depth in the miscellaneous field. 
+    /// The number of bits used for encoding the depth in the miscellaneous field.
     /// </summary>
     private const Int32 DepthBits = 8;
 
@@ -52,19 +52,19 @@ internal readonly struct HashEntry
     private const Int32 DepthShift = TypeBits;
 
     /// <summary>
-    /// The amount the value is shifted in the miscellaneous field. 
+    /// The amount the value is shifted in the miscellaneous field.
     /// </summary>
     private const Int32 ValueShift = DepthShift + DepthBits;
 
     /// <summary>
-    /// The value for normalizing the depth in the miscellaneous field. Adding 
-    /// this factor will guarantee a positive depth. 
+    /// The value for normalizing the depth in the miscellaneous field. Adding
+    /// this factor will guarantee a positive depth.
     /// </summary>
     private const Int32 DepthNormal = 1 << (DepthBits - 1);
 
     /// <summary>
-    /// The value for normalizing the value in the miscellaneous field. Adding 
-    /// this factor will guarantee a positive value. 
+    /// The value for normalizing the value in the miscellaneous field. Adding
+    /// this factor will guarantee a positive value.
     /// </summary>
     private const Int32 ValueNormal = Int16.MaxValue;
 
@@ -79,19 +79,19 @@ internal readonly struct HashEntry
     private const Int32 DepthMask = (1 << DepthBits) - 1;
 
     /// <summary>
-    /// The Zobrist key of the position associated with the hash entry. 
+    /// The Zobrist key of the position associated with the hash entry.
     /// </summary>
     public readonly UInt64 Key;
 
     /// <summary>
-    /// The best move for the position associated with the hash entry. 
+    /// The best move for the position associated with the hash entry.
     /// </summary>
     public readonly Int32 Move;
 
     /// <summary>
-    /// Contains the entry type, search depth, and search value associated with 
+    /// Contains the entry type, search depth, and search value associated with
     /// the hash entry. The properties are rolled into a single value for space
-    /// efficiency. 
+    /// efficiency.
     /// </summary>
     public readonly Int32 Misc;
 
@@ -104,7 +104,7 @@ internal readonly struct HashEntry
     }
 
     /// <summary>
-    /// The search depth associated with the hash entry. 
+    /// The search depth associated with the hash entry.
     /// </summary>
     public Int32 Depth
     {

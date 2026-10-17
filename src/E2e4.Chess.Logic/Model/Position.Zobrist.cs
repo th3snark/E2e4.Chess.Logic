@@ -6,7 +6,7 @@ namespace E2e4.Chess.Logic.Model;
 public sealed partial class Position : IEquatable<Position>
 {
     /// <summary>
-    /// Generates the hash key for the position from scratch. This is expensive 
+    /// Generates the hash key for the position from scratch. This is expensive
     /// and should only be used for initialization and testing. Normally, use the
     /// incrementally updated <see cref="ZobristKey"/>.
     /// </summary>

@@ -3,17 +3,17 @@ using System;
 namespace E2e4.Chess.Logic.Hashing;
 
 /// <summary>
-/// Represents a transposition hash table. 
+/// Represents a transposition hash table.
 /// </summary>
 internal sealed class HashTable
 {
     /// <summary>
-    /// The collection of hash entries. 
+    /// The collection of hash entries.
     /// </summary>
     private readonly HashEntry[] _entries;
 
     /// <summary>
-    /// The number of entries stored in the hash table. 
+    /// The number of entries stored in the hash table.
     /// </summary>
     public Int32 Count
     {
@@ -22,7 +22,7 @@ internal sealed class HashTable
     }
 
     /// <summary>
-    /// The number of entries that can be stored in the hash table. 
+    /// The number of entries that can be stored in the hash table.
     /// </summary>
     public Int32 Capacity
     {
@@ -31,7 +31,7 @@ internal sealed class HashTable
     private readonly UInt64 _capacity;
 
     /// <summary>
-    /// The size of the hash table in bytes. 
+    /// The size of the hash table in bytes.
     /// </summary>
     public Int32 Size
     {
@@ -39,7 +39,7 @@ internal sealed class HashTable
     }
 
     /// <summary>
-    /// Constructs a hash table of the given size in bytes. 
+    /// Constructs a hash table of the given size in bytes.
     /// </summary>
     /// <param name="bytes">The size of the new hash table in bytes.</param>
     public HashTable(Int32 bytes)
@@ -51,8 +51,8 @@ internal sealed class HashTable
     }
 
     /// <summary>
-    /// Finds the entry in the hash table for the given key. The return value 
-    /// indicates whether the entry was found. 
+    /// Finds the entry in the hash table for the given key. The return value
+    /// indicates whether the entry was found.
     /// </summary>
     /// <param name="key">The key to find the entry for.</param>
     /// <param name="entry">Contains the entry found when the method returns.</param>
@@ -64,7 +64,7 @@ internal sealed class HashTable
     }
 
     /// <summary>
-    /// Stores the given entry in the hash table. 
+    /// Stores the given entry in the hash table.
     /// </summary>
     /// <param name="entry">The entry to store.</param>
     public void Store(HashEntry entry)
@@ -76,7 +76,7 @@ internal sealed class HashTable
     }
 
     /// <summary>
-    /// Clears the hash table of all entries. 
+    /// Clears the hash table of all entries.
     /// </summary>
     public void Clear()
     {
