@@ -4,12 +4,12 @@ using E2e4.Chess.Logic.Bitboards;
 namespace E2e4.Chess.Logic.Model;
 
 /// <summary>
-/// Encapsulates general chess logic routines for the chess position. 
+/// Encapsulates general chess logic routines for the chess position.
 /// </summary>
 public sealed partial class Position : IEquatable<Position>
 {
     /// <summary>
-    /// Returns whether the given side is in check. 
+    /// Returns whether the given side is in check.
     /// </summary>
     /// <param name="colour">The side to test for check.</param>
     /// <returns>Whether the given side is in check.</returns>
@@ -19,7 +19,7 @@ public sealed partial class Position : IEquatable<Position>
     }
 
     /// <summary>
-    /// Returns whether the given side is attacked on the given square. 
+    /// Returns whether the given side is attacked on the given square.
     /// </summary>
     /// <param name="colour">The side to test for being attacked.</param>
     /// <param name="square">The square to test for attacks.</param>
@@ -47,7 +47,7 @@ public sealed partial class Position : IEquatable<Position>
     }
 
     /// <summary>
-    /// Returns whether the given move puts the opponent in check.  
+    /// Returns whether the given move puts the opponent in check.
     /// </summary>
     /// <param name="move">The move to test for check.</param>
     /// <returns>Whether the given move puts the opponent in check.</returns>
@@ -63,7 +63,7 @@ public sealed partial class Position : IEquatable<Position>
         switch (special & Piece.Mask)
         {
 
-            // Consider normal move. 
+            // Consider normal move.
             case Piece.Empty:
                 PieceBitboards[piece] ^= fromBitboard | toBitboard;
                 OccupiedBitboard ^= fromBitboard;
@@ -73,7 +73,7 @@ public sealed partial class Position : IEquatable<Position>
                 OccupiedBitboard = occupiedBitboardCopy;
                 break;
 
-            // Consider castling. 
+            // Consider castling.
             case Piece.King:
                 UInt64 rookToBitboard = 1UL << ((toBitboard < fromBitboard ? 3 : 5) + Square.Rank(Move.To(move)) * 8);
                 PieceBitboards[SideToMove | Piece.Rook] ^= rookToBitboard;
@@ -83,7 +83,7 @@ public sealed partial class Position : IEquatable<Position>
                 OccupiedBitboard = occupiedBitboardCopy;
                 break;
 
-            // Consider en passant. 
+            // Consider en passant.
             case Piece.Pawn:
                 UInt64 enPassantPawnBitboard = Move.Pawn(EnPassantSquare, 1 - SideToMove);
                 PieceBitboards[piece] ^= fromBitboard | toBitboard;
@@ -93,7 +93,7 @@ public sealed partial class Position : IEquatable<Position>
                 OccupiedBitboard = occupiedBitboardCopy;
                 break;
 
-            // Consider pawn promotion. 
+            // Consider pawn promotion.
             default:
                 PieceBitboards[SideToMove | Piece.Pawn] ^= fromBitboard;
                 PieceBitboards[special] ^= toBitboard;
@@ -139,7 +139,7 @@ public sealed partial class Position : IEquatable<Position>
     }
 
     /// <summary>
-    /// Returns whether the position has repeated the given number of times. 
+    /// Returns whether the position has repeated the given number of times.
     /// </summary>
     /// <param name="times">The number of repetitions to test for.</param>
     /// <returns>Whether the position has repeated the given number of times.</returns>

@@ -6,7 +6,7 @@ using System.Text;
 namespace E2e4.Chess.Logic.Model;
 
 /// <summary>
-/// Encapsulates the FEN handling component of the chess position. 
+/// Encapsulates the FEN handling component of the chess position.
 /// </summary>
 public sealed partial class Position : IEquatable<Position>
 {

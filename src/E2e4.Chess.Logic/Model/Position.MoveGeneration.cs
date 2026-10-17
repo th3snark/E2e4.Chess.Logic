@@ -6,7 +6,7 @@ using E2e4.Chess.Logic.Bitboards;
 namespace E2e4.Chess.Logic.Model;
 
 /// <summary>
-/// Encapsulates the move generation component of the chess position. 
+/// Encapsulates the move generation component of the chess position.
 /// </summary>
 public sealed partial class Position : IEquatable<Position>
 {
@@ -29,14 +29,14 @@ public sealed partial class Position : IEquatable<Position>
     }
 
     /// <summary>
-    /// Populates the given array with the legal moves for the position and 
-    /// returns the number of legal moves. 
+    /// Populates the given array with the legal moves for the position and
+    /// returns the number of legal moves.
     /// </summary>
-    /// <param name="moves">The array to populate with the legal moves; it must have room for 
+    /// <param name="moves">The array to populate with the legal moves; it must have room for
     /// <see cref="MaxMoves"/> entries.</param>
     /// <returns>The number of legal moves for the position.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="moves"/> is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="moves"/> is shorter than 
+    /// <exception cref="ArgumentException"><paramref name="moves"/> is shorter than
     /// <see cref="MaxMoves"/>.</exception>
     public Int32 LegalMoves(Int32[] moves)
     {
@@ -73,7 +73,7 @@ public sealed partial class Position : IEquatable<Position>
     private Int32 GenerateLegalMoves(Int32[] moves)
 #endif
     {
-        // Initialize bitboards and squares that describe the position. 
+        // Initialize bitboards and squares that describe the position.
         Int32 enemy = 1 - SideToMove;
         Int32 kingSquare = Bitboard.Read(PieceBitboards[SideToMove | Piece.King]);
 
@@ -84,16 +84,16 @@ public sealed partial class Position : IEquatable<Position>
         UInt64 enemyBishopQueenBitboard = PieceBitboards[enemy | Piece.Bishop] | PieceBitboards[enemy | Piece.Queen];
         UInt64 enemyRookQueenBitboard = PieceBitboards[enemy | Piece.Rook] | PieceBitboards[enemy | Piece.Queen];
 
-        // Initialize variables for move generation. 
+        // Initialize variables for move generation.
         UInt64 checkingBitboard = 0;
         UInt64 pinningBitboard = 0;
         Int32 index = 0;
 
-        // Consider knight and pawn checks. 
+        // Consider knight and pawn checks.
         checkingBitboard |= PieceBitboards[enemy | Piece.Knight] & AttackBitboard.Knight(kingSquare);
         checkingBitboard |= PieceBitboards[enemy | Piece.Pawn] & AttackBitboard.Pawn(kingSquare, SideToMove);
 
-        // Consider bishop and queen checks and pins. 
+        // Consider bishop and queen checks and pins.
         if ((enemyBishopQueenBitboard & Bitboard.Diagonals[kingSquare]) != 0)
         {
             checkingBitboard |= enemyBishopQueenBitboard & AttackBitboard.Bishop(kingSquare, OccupiedBitboard);
@@ -118,7 +118,7 @@ public sealed partial class Position : IEquatable<Position>
                 pinningBitboard |= enemyBishopQueenBitboard & AttackBitboard.Bishop(kingSquare, defenceRemovedBitboard);
         }
 
-        // Consider rook and queen checks and pins. 
+        // Consider rook and queen checks and pins.
         if ((enemyRookQueenBitboard & Bitboard.Axes[kingSquare]) != 0)
         {
             checkingBitboard |= enemyRookQueenBitboard & AttackBitboard.Rook(kingSquare, OccupiedBitboard);
@@ -143,7 +143,7 @@ public sealed partial class Position : IEquatable<Position>
                 pinningBitboard |= enemyRookQueenBitboard & AttackBitboard.Rook(kingSquare, defenceRemovedBitboard);
         }
 
-        // Consider castling. This is always fully tested for legality. 
+        // Consider castling. This is always fully tested for legality.
         if (checkingBitboard == 0)
         {
             Int32 rank = -56 * SideToMove + 56;
@@ -157,7 +157,7 @@ public sealed partial class Position : IEquatable<Position>
                     moves[index++] = Move.Create(this, kingSquare, 6 + rank, SideToMove | Piece.King);
         }
 
-        // Consider en passant. This is always fully tested for legality. 
+        // Consider en passant. This is always fully tested for legality.
         if (EnPassantSquare != InvalidSquare)
         {
 
@@ -166,25 +166,25 @@ public sealed partial class Position : IEquatable<Position>
             while (enPassantPawnBitboard != 0)
             {
 
-                // Perform minimal state changes to mimic en passant and check for 
-                // legality. 
+                // Perform minimal state changes to mimic en passant and check for
+                // legality.
                 Int32 from = Bitboard.Pop(ref enPassantPawnBitboard);
                 PieceBitboards[enemy | Piece.Pawn] ^= enPassantVictimBitboard;
                 OccupiedBitboard ^= enPassantVictimBitboard;
                 OccupiedBitboard ^= (1UL << from) | (1UL << EnPassantSquare);
 
-                // Check for legality and add move. 
+                // Check for legality and add move.
                 if (!IsAttacked(SideToMove, kingSquare))
                     moves[index++] = Move.Create(this, from, EnPassantSquare, enemy | Piece.Pawn);
 
-                // Revert state changes. 
+                // Revert state changes.
                 PieceBitboards[enemy | Piece.Pawn] ^= enPassantVictimBitboard;
                 OccupiedBitboard ^= enPassantVictimBitboard;
                 OccupiedBitboard ^= (1UL << from) | (1UL << EnPassantSquare);
             }
         }
 
-        // Consider king moves. This is always fully tested for legality. 
+        // Consider king moves. This is always fully tested for legality.
         {
             Int32 from = kingSquare;
             UInt64 moveBitboard = targetBitboard & AttackBitboard.King(from);
@@ -196,32 +196,32 @@ public sealed partial class Position : IEquatable<Position>
             }
         }
 
-        // Consider the other pieces. If we are not in check and there are no pinned pieces, none of their moves 
+        // Consider the other pieces. If we are not in check and there are no pinned pieces, none of their moves
         // can be illegal, so they need no test. If there are pinned pieces or a single check we can still move,
-        // but every move is tested. If there is a double check only the king can move, so there is nothing to do. 
+        // but every move is tested. If there is a double check only the king can move, so there is nothing to do.
         Boolean testForLegality = checkingBitboard != 0 | pinningBitboard != 0;
         if (!testForLegality || (checkingBitboard & (checkingBitboard - 1)) == 0)
         {
 
-            // Consider pawn moves. 
+            // Consider pawn moves.
             UInt64 pieceBitboard = PieceBitboards[SideToMove | Piece.Pawn];
             while (pieceBitboard != 0)
             {
 
-                // Consider single square advance. 
+                // Consider single square advance.
                 Int32 from = Bitboard.Pop(ref pieceBitboard);
                 Int32 to = from + 16 * SideToMove - 8;
                 UInt64 moveBitboard = ~OccupiedBitboard & (1UL << to);
 
-                // Consider two square advance. 
+                // Consider two square advance.
                 if (moveBitboard != 0 && (from - 16) * (from - 47) > 0 && (to - 8) * (to - 55) < 0)
                     moveBitboard |= ~OccupiedBitboard & (1UL << (from + 32 * SideToMove - 16));
 
-                // Consider captures. 
+                // Consider captures.
                 UInt64 attackBitboard = AttackBitboard.Pawn(from, SideToMove);
                 moveBitboard |= enemyBitboard & attackBitboard;
 
-                // Populate pawn moves. 
+                // Populate pawn moves.
                 while (moveBitboard != 0)
                 {
                     to = Bitboard.Pop(ref moveBitboard);
@@ -240,7 +240,7 @@ public sealed partial class Position : IEquatable<Position>
                 }
             }
 
-            // Consider knight moves. 
+            // Consider knight moves.
             pieceBitboard = PieceBitboards[SideToMove | Piece.Knight];
             while (pieceBitboard != 0)
             {
@@ -254,7 +254,7 @@ public sealed partial class Position : IEquatable<Position>
                 }
             }
 
-            // Consider bishop moves. 
+            // Consider bishop moves.
             pieceBitboard = PieceBitboards[SideToMove | Piece.Bishop];
             while (pieceBitboard != 0)
             {
@@ -268,7 +268,7 @@ public sealed partial class Position : IEquatable<Position>
                 }
             }
 
-            // Consider queen moves. 
+            // Consider queen moves.
             pieceBitboard = PieceBitboards[SideToMove | Piece.Queen];
             while (pieceBitboard != 0)
             {
@@ -282,7 +282,7 @@ public sealed partial class Position : IEquatable<Position>
                 }
             }
 
-            // Consider rook moves. 
+            // Consider rook moves.
             pieceBitboard = PieceBitboards[SideToMove | Piece.Rook];
             while (pieceBitboard != 0)
             {
@@ -302,7 +302,7 @@ public sealed partial class Position : IEquatable<Position>
     /// <summary>
     /// Performs the minimal state changes to mimic moving a piece from one square to another, reports whether our king
     /// on <paramref name="kingSquare"/> is then safe from attack, and reverts the changes. Only the bitboards are
-    /// touched, never <c>Board</c>, so a move can be created from the position afterwards. 
+    /// touched, never <c>Board</c>, so a move can be created from the position afterwards.
     /// </summary>
     /// <param name="from">The square the piece moves from.</param>
     /// <param name="to">The square the piece moves to, which may hold an enemy piece.</param>

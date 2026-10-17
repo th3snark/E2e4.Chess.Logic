@@ -40,8 +40,8 @@ public sealed partial class Position : IEquatable<Position>
     public const Int32 InvalidSquare = -1;
 
     /// <summary>
-    /// The minimum length of the array passed to <see cref="LegalMoves(Int32[])"/>. No known 
-    /// position has more than 218 legal moves; this leaves headroom. 
+    /// The minimum length of the array passed to <see cref="LegalMoves(Int32[])"/>. No known
+    /// position has more than 218 legal moves; this leaves headroom.
     /// </summary>
     public const Int32 MaxMoves = 256;
 
@@ -87,7 +87,7 @@ public sealed partial class Position : IEquatable<Position>
 
     /// <summary>
     /// The ply the position was created at (non-zero for a FEN with a move number). Moves can only be
-    /// unmade back to this point, because no history exists before it. 
+    /// unmade back to this point, because no history exists before it.
     /// </summary>
     private Int32 _rootHalfMoves;
 

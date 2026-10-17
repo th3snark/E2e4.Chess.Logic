@@ -4,7 +4,7 @@ using System.Globalization;
 namespace E2e4.Chess.Logic.Model;
 
 /// <summary>
-/// Provides methods for square encoding and decoding. 
+/// Provides methods for square encoding and decoding.
 /// </summary>
 public static class Square
 {
@@ -44,7 +44,7 @@ public static class Square
     }
 
     /// <summary>
-    /// Returns the text representation of the file for the given square. 
+    /// Returns the text representation of the file for the given square.
     /// </summary>
     /// <param name="square">The square to identify.</param>
     /// <returns>The name of the file for the given square.</returns>
@@ -54,7 +54,7 @@ public static class Square
     }
 
     /// <summary>
-    /// Returns the text representation of the rank for the given square. 
+    /// Returns the text representation of the rank for the given square.
     /// </summary>
     /// <param name="square">The square to identify.</param>
     /// <returns>The name of the rank for the given square.</returns>
@@ -64,7 +64,7 @@ public static class Square
     }
 
     /// <summary>
-    /// Returns the text representation of the given square in coordinate 
+    /// Returns the text representation of the given square in coordinate
     /// notation.
     /// </summary>
     /// <param name="square">The square to identify.</param>

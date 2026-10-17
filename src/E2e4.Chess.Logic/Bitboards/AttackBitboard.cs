@@ -4,7 +4,7 @@ using E2e4.Chess.Logic.Model;
 namespace E2e4.Chess.Logic.Bitboards;
 
 /// <summary>
-/// Provides methods for attack bitboard generation. 
+/// Provides methods for attack bitboard generation.
 /// </summary>
 static class AttackBitboard
 {
@@ -14,25 +14,25 @@ static class AttackBitboard
     private const UInt64 BorderlessBitboard = 0x007E7E7E7E7E7E00UL;
 
     /// <summary>
-    /// The collection of king attack bitboards. KingAttack[s] gives a bitboard 
-    /// of the squares attacked by a king on square s. 
+    /// The collection of king attack bitboards. KingAttack[s] gives a bitboard
+    /// of the squares attacked by a king on square s.
     /// </summary>
     private static readonly UInt64[] KingAttack = new UInt64[64];
 
     /// <summary>
-    /// The collection of knight attack bitboards. KnightAttack[s] gives a 
-    /// bitboard of the squares attacked by a knight on square s. 
+    /// The collection of knight attack bitboards. KnightAttack[s] gives a
+    /// bitboard of the squares attacked by a knight on square s.
     /// </summary>
     private static readonly UInt64[] KnightAttack = new UInt64[64];
 
     /// <summary>
-    /// The collection of pawn attack bitboards. PawnAttack[c][s] gives a 
-    /// bitboard of the squares attacked by a pawn of colour c on square s. 
+    /// The collection of pawn attack bitboards. PawnAttack[c][s] gives a
+    /// bitboard of the squares attacked by a pawn of colour c on square s.
     /// </summary>
     private static readonly UInt64[][] PawnAttack = { new UInt64[64], new UInt64[64] };
 
     /// <summary>
-    /// Initializes lookup tables. 
+    /// Initializes lookup tables.
     /// </summary>
     static AttackBitboard()
     {
@@ -42,19 +42,19 @@ static class AttackBitboard
             Int32 file = Square.File(square);
             Int32 rank = Square.Rank(square);
 
-            // Initialize king attack bitboards. 
+            // Initialize king attack bitboards.
             for (Int32 a = -1; a <= 1; a++)
                 for (Int32 b = -1; b <= 1; b++)
                     if (a != 0 || b != 0)
                         KingAttack[square] ^= TryGetBitboard(file + a, rank + b);
 
-            // Initialize knight attack bitboards. 
+            // Initialize knight attack bitboards.
             for (Int32 a = -2; a <= 2; a++)
                 for (Int32 b = -2; b <= 2; b++)
                     if (Math.Abs(a) + Math.Abs(b) == 3)
                         KnightAttack[square] ^= TryGetBitboard(file + a, rank + b);
 
-            // Initialize pawn attack bitboards. 
+            // Initialize pawn attack bitboards.
             PawnAttack[Colour.White][square] ^= TryGetBitboard(file - 1, rank - 1);
             PawnAttack[Colour.White][square] ^= TryGetBitboard(file + 1, rank - 1);
             PawnAttack[Colour.Black][square] ^= TryGetBitboard(file - 1, rank + 1);
@@ -63,9 +63,9 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns a bitboard consisting of a single filled square with the given 
-    /// file and rank. If an invalid square is specified the empty bitboard is 
-    /// returned. 
+    /// Returns a bitboard consisting of a single filled square with the given
+    /// file and rank. If an invalid square is specified the empty bitboard is
+    /// returned.
     /// </summary>
     /// <param name="file">The file of the square.</param>
     /// <param name="rank">The rank of the square.</param>
@@ -78,7 +78,7 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns the king's attack bitboard for the given square. 
+    /// Returns the king's attack bitboard for the given square.
     /// </summary>
     /// <param name="square">The square the king is on.</param>
     /// <returns>The king's attack bitboard.</returns>
@@ -88,8 +88,8 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns the queen's attack bitboard for the given square with the given 
-    /// occupancy bitboard. 
+    /// Returns the queen's attack bitboard for the given square with the given
+    /// occupancy bitboard.
     /// </summary>
     /// <param name="square">The square the queen is on.</param>
     /// <param name="occupiedBitboard">The occupancy bitboard.</param>
@@ -100,7 +100,7 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns the rook's attack bitboard for the given square with the given 
+    /// Returns the rook's attack bitboard for the given square with the given
     /// occupancy bitboard.
     /// </summary>
     /// <param name="square">The square the rook is on.</param>
@@ -133,7 +133,7 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns the bishop's attack bitboard for the given square with the given 
+    /// Returns the bishop's attack bitboard for the given square with the given
     /// occupancy bitboard.
     /// </summary>
     /// <param name="square">The square the bishop is on.</param>
@@ -168,7 +168,7 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns the knight's attack bitboard for the given square. 
+    /// Returns the knight's attack bitboard for the given square.
     /// </summary>
     /// <param name="square">The square the knight is on.</param>
     /// <returns>The knight's attack bitboard.</returns>
@@ -178,8 +178,8 @@ static class AttackBitboard
     }
 
     /// <summary>
-    /// Returns the pawn's attack bitboard for the given square as the given 
-    /// colour. 
+    /// Returns the pawn's attack bitboard for the given square as the given
+    /// colour.
     /// </summary>
     /// <param name="square">The square the pawn is on.</param>
     /// <param name="colour">The colour of the pawn.</param>
