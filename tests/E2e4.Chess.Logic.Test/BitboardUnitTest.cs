@@ -85,30 +85,6 @@ public class BitboardUnitTest
         Assert.Equal(expected, Bitboard.IsolateReverse(bitboard));
     }
 
-    [Fact]
-    public void ToStringUInt64ProducesSixtyFourCharacterBinaryString()
-    {
-        string zero = Bitboard.ToString(0UL);
-        string lightSquares = Bitboard.ToString(Bitboard.LightSquares);
-
-        Assert.Equal(64, zero.Length);
-        Assert.DoesNotContain('1', zero);
-
-        Assert.Equal(64, lightSquares.Length);
-        Assert.Equal(32, CountSetChars(lightSquares));
-    }
-
-    [Fact]
-    public void ToMatrixProducesEightByEightNewlineDelimitedGrid()
-    {
-        string matrix = Bitboard.ToMatrix(Bitboard.LightSquares);
-        string[] rows = matrix.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-
-        Assert.Equal(8, rows.Length);
-        Assert.All(rows, row => Assert.Equal(8, row.Length));
-        Assert.Equal(32, CountSetChars(matrix));
-    }
-
     private static int CountSetChars(string binary)
     {
         int count = 0;

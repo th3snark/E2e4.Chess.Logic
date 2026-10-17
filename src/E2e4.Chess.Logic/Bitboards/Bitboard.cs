@@ -1,5 +1,3 @@
-using System;
-using System.Text;
 #if NET
 using System.Numerics;
 #endif
@@ -16,18 +14,6 @@ namespace E2e4.Chess.Logic.Bitboards;
 /// </summary>
 internal static class Bitboard
 {
-    /// <summary>
-    /// The collection of bitboard files for a given square. File[s] gives a bitboard of the
-    /// squares along the file of square s.
-    /// </summary>
-    public static readonly ulong[] File = new ulong[64];
-
-    /// <summary>
-    /// The collection of bitboard ranks for a given square. Rank[s] gives a bitboard of the
-    /// squares along the rank of square s.
-    /// </summary>
-    public static readonly ulong[] Rank = new ulong[64];
-
     /// <summary>RayN[s] gives a bitboard of the ray of squares strictly to the north of square s.</summary>
     public static readonly ulong[] RayN = new ulong[64];
 
@@ -76,10 +62,6 @@ internal static class Bitboard
     {
         for (int square = 0; square < 64; square++)
         {
-            // Initialize file and rank bitboard tables.
-            File[square] = LineFill(Square.File(square), 0, 1);
-            Rank[square] = LineFill(Square.Rank(square) * 8, 1, 0);
-
             // Initialize ray tables.
             RayN[square] = LineFill(square, 0, -1) ^ (1UL << square);
             RayE[square] = LineFill(square, 1, 0) ^ (1UL << square);
@@ -221,46 +203,5 @@ internal static class Bitboard
         if ((index >> 3) == ((index + dx) >> 3))
             bitboard |= LineFill(index + dx + dy * 8, dx, dy);
         return bitboard;
-    }
-
-    /// <summary>
-    /// Returns a string giving the binary representation of the bitboard, most significant bit
-    /// first.
-    /// </summary>
-    /// <param name="bitboard">The bitboard to convert.</param>
-    /// <returns>The binary representation of the bitboard.</returns>
-    public static string ToString(ulong bitboard)
-    {
-        char[] chars = new char[64];
-        for (int i = chars.Length - 1; i >= 0; i--)
-        {
-            chars[i] = (char)((bitboard & 1) + 48);
-            bitboard >>= 1;
-        }
-        return new string(chars);
-    }
-
-    /// <summary>
-    /// Returns a string giving the binary representation of the bitboard with
-    /// appropriate line terminating characters. The result is a 8 by 8 matrix.
-    /// </summary>
-    /// <param name="bitboard">The bitboard to convert</param>
-    /// <returns>The binary representation of the bitboard in a matrix format.</returns>
-    public static string ToMatrix(ulong bitboard)
-    {
-        StringBuilder sb = new StringBuilder(78);
-        int file = 0;
-        for (int i = 0; i < 71; i++)
-            if (++file > 8)
-            {
-                sb.Append(Environment.NewLine);
-                file = 0;
-            }
-            else
-            {
-                sb.Append(bitboard & 1);
-                bitboard >>= 1;
-            }
-        return sb.ToString();
     }
 }

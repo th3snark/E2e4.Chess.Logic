@@ -462,25 +462,6 @@ public class BitboardExhaustiveUnitTest
     }
 
     [Fact]
-    public void FileAndRankTablesPartitionTheBoard()
-    {
-        ulong files = 0;
-        ulong ranks = 0;
-        for (int square = 0; square < 64; square++)
-        {
-            Assert.Equal(8, Bitboard.Count(Bitboard.File[square]));
-            Assert.Equal(8, Bitboard.Count(Bitboard.Rank[square]));
-            Assert.NotEqual(0UL, Bitboard.File[square] & (1UL << square));
-            Assert.NotEqual(0UL, Bitboard.Rank[square] & (1UL << square));
-            files |= Bitboard.File[square];
-            ranks |= Bitboard.Rank[square];
-        }
-
-        Assert.Equal(ulong.MaxValue, files);
-        Assert.Equal(ulong.MaxValue, ranks);
-    }
-
-    [Fact]
     public void RaysNeverIncludeTheirOwnSquareAndStayOnTheirLine()
     {
         for (int square = 0; square < 64; square++)
@@ -491,8 +472,6 @@ public class BitboardExhaustiveUnitTest
                 Assert.Equal(0UL, ray[square] & self);
             }
 
-            Assert.Equal(0UL, Bitboard.RayN[square] & ~Bitboard.File[square]);
-            Assert.Equal(0UL, Bitboard.RayE[square] & ~Bitboard.Rank[square]);
         }
 
         Assert.Equal(0UL, Bitboard.RayN[0]);
