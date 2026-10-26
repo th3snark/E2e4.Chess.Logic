@@ -38,7 +38,7 @@ public class PositionSetupUnitTest
     [Fact]
     public void ABarePlacementIsAccepted()
     {
-        PositionSetup setup = Parse("4k3/8/8/8/8/8/8/4K3");
+        PositionSetup setup = Parse("4k3/8/8/8/8/8/8/R3K3");
 
         Assert.Equal(Colour.White, setup.SideToMove);
         Assert.Empty(setup.Validate());
@@ -64,7 +64,7 @@ public class PositionSetupUnitTest
     [Fact]
     public void ALegalPositionRoundTripsAndConvertsToAPosition()
     {
-        const string fen = "r3k2r/8/8/3pP3/8/8/8/R3K2R w KQkq d6 3 20";
+        const string fen = "r3k2r/8/8/3pP3/8/8/8/R3K2R w KQkq d6 0 20";
         PositionSetup setup = Parse(fen);
 
         Assert.Empty(setup.Validate());
@@ -140,7 +140,7 @@ public class PositionSetupUnitTest
     [Fact]
     public void ABareLegalPositionHasNoProblems()
     {
-        Assert.Empty(Kinds("4k3/8/8/8/8/8/8/4K3 w - - 0 1"));
+        Assert.Empty(Kinds("4k3/8/8/8/8/8/8/R3K3 w - - 0 1"));
         Assert.Empty(Kinds("4k3/P7/8/8/8/8/8/4K3 w - - 0 1"));
     }
 
@@ -239,7 +239,7 @@ public class PositionSetupUnitTest
     [Fact]
     public void EnPassantFilesFollowThePawnsAndTheSideToMove()
     {
-        PositionSetup setup = Parse("4k3/8/8/3pP3/8/8/8/4K3 w - - 0 1");
+        PositionSetup setup = Parse("4k3/8/8/3pP3/8/8/8/4K3 w - - 0 2");
         Assert.Equal(new[] { 3 }, setup.PossibleEnPassantFiles.ToArray());
 
         setup.EnPassantSquare = Square.SquareAt("d6");
@@ -289,6 +289,65 @@ public class PositionSetupUnitTest
         setup[Square.SquareAt("d5")] = Piece.Empty;
         setup.DropInvalidEnPassant();
         Assert.Equal(Position.InvalidSquare, setup.EnPassantSquare);
+    }
+
+    [Theory]
+    [InlineData("4k3/8/8/8/8/3n1n2/8/4K3 w - - 0 10")]               // two knights
+    [InlineData("4r2k/8/8/4K3/8/8/8/4r3 w - - 0 10")]                // two rooks on one line through the king
+    [InlineData("4k3/8/8/3pP3/8/5n2/8/4K3 w - d6 0 10")]             // check not from the pawn that just advanced
+    public void AnImpossibleCheckIsReported(string fen)
+    {
+        Assert.Contains(PositionProblemKind.ImpossibleCheck, Kinds(fen));
+        Assert.NotNull(Parse(fen).ToPosition());
+    }
+
+    [Theory]
+    [InlineData("4r2k/8/8/8/1b6/8/8/4K3 w - - 0 10")]                // discovered double check: rook and bishop
+    [InlineData("2b4k/8/8/3pP3/6K1/8/8/8 w - d6 0 10")]              // the pawn's advance uncovered the bishop
+    [InlineData("4k3/8/8/8/8/5n2/8/4K3 w - - 0 10")]                 // an ordinary check
+    public void APossibleCheckIsNotReported(string fen)
+    {
+        Assert.DoesNotContain(PositionProblemKind.ImpossibleCheck, Kinds(fen));
+    }
+
+    [Fact]
+    public void PawnsThatNeedMoreCapturesThanWereMadeAreReported()
+    {
+        Assert.Contains(PositionProblemKind.PawnsNeedMoreCaptures, Kinds("rnbqkbnr/pppppppp/8/8/1P6/1P6/1P6/4K3 w kq - 0 10"));
+        Assert.DoesNotContain(PositionProblemKind.PawnsNeedMoreCaptures, Kinds("4k3/8/8/8/1P6/1P6/1P6/4K3 w - - 0 10"));
+        Assert.DoesNotContain(PositionProblemKind.PawnsNeedMoreCaptures, Kinds(Position.StartingFEN));
+    }
+
+    [Theory]
+    [InlineData("4k3/8/8/8/8/8/8/R3K3 w - - 5 1")]                   // more half moves than played
+    [InlineData("4k3/8/8/3pP3/8/8/8/4K3 w - d6 3 20")]               // en passant square after a pawn advance
+    [InlineData("4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 1")]                // en passant before any move
+    public void AnInconsistentClockIsReported(string fen)
+    {
+        Assert.Contains(PositionProblemKind.InconsistentClock, Kinds(fen));
+        Assert.NotNull(Parse(fen).ToPosition());
+    }
+
+    [Fact]
+    public void ARealisticClockIsNotReported()
+    {
+        Assert.DoesNotContain(PositionProblemKind.InconsistentClock, Kinds("4k3/8/8/8/8/8/8/R3K3 w - - 4 3"));
+        Assert.DoesNotContain(PositionProblemKind.InconsistentClock, Kinds("4k3/8/8/8/8/8/8/R3K3 b - - 1 1"));
+    }
+
+    [Fact]
+    public void DeadPositionsAreWarnedAbout()
+    {
+        PositionProblem problem = Assert.Single(Parse("4k3/8/8/8/8/8/8/4K3 w - - 0 1").Validate());
+
+        Assert.Equal(PositionProblemKind.InsufficientMaterial, problem.Kind);
+        Assert.Equal(PositionProblemSeverity.Warning, problem.Severity);
+    }
+
+    [Fact]
+    public void UnreachableWarningsNeverBlockThePosition()
+    {
+        Assert.All(Parse("4k3/8/8/8/8/3n1n2/8/4K3 w - - 0 10").Validate(), p => Assert.Equal(PositionProblemSeverity.Warning, p.Severity));
     }
 
     [Fact]

@@ -32,8 +32,11 @@ For a position editor, `PositionSetup` accepts any arrangement while it is being
 
 ## Notes
 
-- `Position.TryParse` and `PositionSetup.TryParse` return `false` on bad input instead of throwing, and `Make`/`Unmake` throw at the
-  ply limit (`Position.HalfMovesLimit`) rather than overrun their buffers.
+- `Position.TryParse` and `PositionSetup.TryParse` return `false` on bad input instead of throwing; they share one parser, so they accept
+  the same FEN (a bare placement is fine, repeated castling letters are not) and `Position` accepts exactly what `PositionSetup.Validate()`
+  reports no errors for. Warnings (a position no game could reach, or one that has ended) do not stop a `Position`.
+  `Make`/`Unmake` throw at the ply limit
+  (`Position.HalfMovesLimit`) rather than overrun their buffers.
 - The library does no I/O and holds no global state; a `Position` is not thread-safe, so give each thread its own (`DeepClone`).
 
 ## Build and test

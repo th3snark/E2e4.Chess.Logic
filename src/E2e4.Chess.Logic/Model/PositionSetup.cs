@@ -234,14 +234,18 @@ public sealed class PositionSetup
             return false;
         foreach (char c in rights)
         {
+            CastlingRights right;
             switch (c)
             {
-                case 'K': Castling |= CastlingRights.WhiteKingside; break;
-                case 'Q': Castling |= CastlingRights.WhiteQueenside; break;
-                case 'k': Castling |= CastlingRights.BlackKingside; break;
-                case 'q': Castling |= CastlingRights.BlackQueenside; break;
+                case 'K': right = CastlingRights.WhiteKingside; break;
+                case 'Q': right = CastlingRights.WhiteQueenside; break;
+                case 'k': right = CastlingRights.BlackKingside; break;
+                case 'q': right = CastlingRights.BlackQueenside; break;
                 default: return false;
             }
+            if ((Castling & right) != 0)
+                return false;
+            Castling |= right;
         }
         return true;
     }
@@ -369,8 +373,10 @@ public sealed class PositionSetup
     }
 
     /// <summary>
-    /// Checks the setup and lists every problem found. An empty list means <see cref="ToPosition"/> will succeed
-    /// and the position can arise in play; warnings do not stop that.
+    /// Checks the setup and lists every problem found. Errors mean <see cref="ToPosition"/> fails. Warnings
+    /// leave the position playable but flag one that is probably unintended, cannot arise in a game
+    /// (an impossible check, pawns that would need more captures than were made, an inconsistent fifty-moves
+    /// clock) or has already ended; an empty list means none of that was found.
     /// </summary>
     public IReadOnlyList<PositionProblem> Validate()
     {
@@ -378,14 +384,17 @@ public sealed class PositionSetup
 
         if (problems.Count == 0)
         {
-            Position? position = ToPosition();
-            if (position != null && position.LegalMoves().Count == 0)
+            Position position = Position.Create(this);
+            FindUnreachable(position, problems);
+            if (position.LegalMoves().Count == 0)
             {
                 string message = position.InCheck(SideToMove)
                     ? "The side to move is checkmated."
                     : "The side to move is stalemated.";
                 problems.Add(new PositionProblem(PositionProblemKind.NoLegalMoves, PositionProblemSeverity.Warning, message));
             }
+            if (position.InsufficientMaterial())
+                problems.Add(new PositionProblem(PositionProblemKind.InsufficientMaterial, PositionProblemSeverity.Warning, "Neither side has the material to deliver checkmate."));
         }
 
         return problems;
@@ -471,28 +480,132 @@ public sealed class PositionSetup
 
             if (!pawnOnEdge && materialOk && !adjacent)
             {
-                Position? board = PositionWithoutExtras();
-                if (board != null)
-                {
-                    int waiting = 1 - SideToMove;
-                    if (board.InCheck(waiting))
-                        problems.Add(new PositionProblem(PositionProblemKind.SideNotToMoveInCheck, PositionProblemSeverity.Error, "The " + Colour.GetName(waiting) + " king is in check but it is not " + Colour.GetName(waiting) + "'s move."));
-                }
+                int waiting = 1 - SideToMove;
+                if (BoardOnly().InCheck(waiting))
+                    problems.Add(new PositionProblem(PositionProblemKind.SideNotToMoveInCheck, PositionProblemSeverity.Error, "The " + Colour.GetName(waiting) + " king is in check but it is not " + Colour.GetName(waiting) + "'s move."));
             }
         }
 
         return problems;
     }
 
-    // A playable position of this board alone, so attacks can be measured before the other fields are consistent.
-    private Position? PositionWithoutExtras()
+    // Rules a playable position can still break because no game could have reached it. The checks are necessary
+    // conditions only: they reject provably unreachable positions and never claim a position is reachable.
+    private void FindUnreachable(Position position, List<PositionProblem> problems)
+    {
+        if (IsImpossibleCheck(position))
+            problems.Add(new PositionProblem(PositionProblemKind.ImpossibleCheck, PositionProblemSeverity.Warning, "The " + Colour.GetName(SideToMove) + " king is in a check that no single move could have given."));
+
+        for (int colour = Colour.White; colour <= Colour.Black; colour++)
+        {
+            int enemyPieces = 0;
+            for (int square = 0; square < 64; square++)
+            {
+                if (_squares[square] != Piece.Empty && (_squares[square] & Colour.Mask) != colour)
+                    enemyPieces++;
+            }
+            if (CapturesNeeded(colour) > 16 - enemyPieces)
+                problems.Add(new PositionProblem(PositionProblemKind.PawnsNeedMoreCaptures, PositionProblemSeverity.Warning, "The " + Colour.GetName(colour) + " pawns have left their files by more captures than the " + Colour.GetName(1 - colour) + " side has lost pieces."));
+        }
+
+        long plies = 2L * (MoveNumber - 1) + SideToMove;
+        if (FiftyMovesClock > plies)
+            problems.Add(new PositionProblem(PositionProblemKind.InconsistentClock, PositionProblemSeverity.Warning, "The fifty-moves clock is larger than the number of half moves played."));
+        else if (EnPassantSquare != NoSquare && (FiftyMovesClock != 0 || plies < 1))
+            problems.Add(new PositionProblem(PositionProblemKind.InconsistentClock, PositionProblemSeverity.Warning, "A two-square pawn advance has just been played, so the fifty-moves clock must be zero."));
+    }
+
+    private bool IsImpossibleCheck(Position position)
+    {
+        int king = -1;
+        for (int square = 0; square < 64; square++)
+        {
+            if (_squares[square] == (SideToMove | Piece.King))
+                king = square;
+        }
+
+        List<int> checkers = position.AttackersOf(1 - SideToMove, king);
+        if (checkers.Count == 0)
+            return false;
+
+        if (EnPassantSquare != NoSquare)
+        {
+            // The pawn that has just advanced two squares must be the checker, or have uncovered the check.
+            if (checkers.Count > 1)
+                return true;
+            int pushedTo = SideToMove == Colour.Black ? EnPassantSquare - 8 : EnPassantSquare + 8;
+            int pushedFrom = SideToMove == Colour.Black ? EnPassantSquare + 8 : EnPassantSquare - 8;
+            if (checkers[0] == pushedTo)
+                return false;
+            PositionSetup before = Clone();
+            before.Castling = CastlingRights.None;
+            before.EnPassantSquare = NoSquare;
+            before._squares[pushedFrom] = before._squares[pushedTo];
+            before._squares[pushedTo] = Piece.Empty;
+            Position? earlier = before.ToPosition();
+            return earlier != null && earlier.AttackersOf(1 - SideToMove, king).Count > 0;
+        }
+
+        if (checkers.Count > 2)
+            return true;
+        if (checkers.Count == 2)
+        {
+            // A double check needs a discovered one, which only a bishop, rook or queen can give, and two sliders
+            // on one line through the king would have blocked each other.
+            return (!IsSlider(checkers[0]) && !IsSlider(checkers[1])) || Aligned(checkers[0], checkers[1], king);
+        }
+        return false;
+    }
+
+    private bool IsSlider(int square)
+    {
+        int kind = _squares[square] & Piece.Mask;
+        return kind == Piece.Bishop || kind == Piece.Rook || kind == Piece.Queen;
+    }
+
+    private static bool Aligned(int a, int b, int c)
+    {
+        if (!Square.SameLine(a, b))
+            return false;
+        int cross = (Square.File(b) - Square.File(a)) * (Square.Rank(c) - Square.Rank(a))
+                    - (Square.Rank(b) - Square.Rank(a)) * (Square.File(c) - Square.File(a));
+        return cross == 0;
+    }
+
+    // The fewest captures the pawns of a colour have made, from the files they stand on: each pawn started on its
+    // own file and moves one file per capture, and pawns keep their order, so match them to distinct start files.
+    private int CapturesNeeded(int colour)
+    {
+        List<int> files = new List<int>();
+        for (int square = 0; square < 64; square++)
+        {
+            if (_squares[square] == (colour | Piece.Pawn))
+                files.Add(Square.File(square));
+        }
+        files.Sort();
+
+        const int unreachable = 1000;
+        int[] previous = new int[9];
+        for (int pawn = 0; pawn < files.Count; pawn++)
+        {
+            int[] current = new int[9];
+            current[0] = unreachable;
+            for (int origin = 1; origin <= 8; origin++)
+                current[origin] = Math.Min(current[origin - 1], previous[origin - 1] + Math.Abs(files[pawn] - (origin - 1)));
+            previous = current;
+        }
+        return previous[8];
+    }
+
+    // The board alone as a position, so attacks can be measured before the other fields are consistent.
+    private Position BoardOnly()
     {
         PositionSetup bare = Clone();
         bare.Castling = CastlingRights.None;
         bare.EnPassantSquare = NoSquare;
-        // Null when the position cannot be played; the caller reports that through its own problem list.
-        _ = Position.TryParseBoard(bare.ToFen(), true, out Position? position);
-        return position;
+        bare.FiftyMovesClock = 0;
+        bare.MoveNumber = 1;
+        return Position.Create(bare);
     }
 
     /// <summary>
@@ -500,8 +613,11 @@ public sealed class PositionSetup
     /// </summary>
     public Position? ToPosition()
     {
-        if (FindErrors().Count > 0)
-            return null;
-        return Position.TryParse(ToFen(), out Position? position) ? position : null;
+        return IsPlayable() ? Position.Create(this) : null;
+    }
+
+    internal bool IsPlayable()
+    {
+        return FindErrors().Count == 0;
     }
 }

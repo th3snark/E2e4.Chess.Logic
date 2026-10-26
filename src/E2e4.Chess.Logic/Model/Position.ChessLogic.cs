@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using E2e4.Chess.Logic.Bitboards;
 
 namespace E2e4.Chess.Logic.Model;
@@ -44,6 +45,67 @@ public sealed partial class Position : IEquatable<Position>
             return true;
 
         return false;
+    }
+
+    /// <summary>
+    /// Returns the squares of the pieces of the given colour that attack the given square (whatever stands on it),
+    /// in ascending square order. With a king's square this lists the checkers.
+    /// </summary>
+    /// <param name="colour">The colour of the attacking pieces.</param>
+    /// <param name="square">The square attacked.</param>
+    /// <returns>The squares of the attackers.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The colour is neither colour or the square is outside 0 to 63.</exception>
+    public List<int> AttackersOf(int colour, int square)
+    {
+        if (colour != Colour.White && colour != Colour.Black)
+            throw new ArgumentOutOfRangeException(nameof(colour));
+        if ((uint)square > 63)
+            throw new ArgumentOutOfRangeException(nameof(square));
+
+        ulong bishopQueen = PieceBitboards[colour | Piece.Bishop] | PieceBitboards[colour | Piece.Queen];
+        ulong rookQueen = PieceBitboards[colour | Piece.Rook] | PieceBitboards[colour | Piece.Queen];
+        ulong attackers = (PieceBitboards[colour | Piece.Knight] & AttackBitboard.Knight(square))
+                        | (PieceBitboards[colour | Piece.Pawn] & AttackBitboard.Pawn(square, 1 - colour))
+                        | (PieceBitboards[colour | Piece.King] & AttackBitboard.King(square))
+                        | (bishopQueen & AttackBitboard.Bishop(square, OccupiedBitboard))
+                        | (rookQueen & AttackBitboard.Rook(square, OccupiedBitboard));
+        return ToSquares(attackers);
+    }
+
+    /// <summary>
+    /// Returns the squares the piece on the given square attacks, in ascending square order, whether they are
+    /// empty, hold an enemy piece or hold one of its own (which it then defends). Sliders stop at the first
+    /// piece. This is attack geometry, not legal moves: it ignores pins, checks, pawn pushes and castling.
+    /// </summary>
+    /// <param name="square">The square of the piece.</param>
+    /// <returns>The attacked squares; empty for an empty square.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The square is outside 0 to 63.</exception>
+    public List<int> AttacksFrom(int square)
+    {
+        if ((uint)square > 63)
+            throw new ArgumentOutOfRangeException(nameof(square));
+
+        int piece = Board[square];
+        ulong attacks;
+        switch (piece & Piece.Mask)
+        {
+            case Piece.Pawn: attacks = AttackBitboard.Pawn(square, piece & Colour.Mask); break;
+            case Piece.Knight: attacks = AttackBitboard.Knight(square); break;
+            case Piece.Bishop: attacks = AttackBitboard.Bishop(square, OccupiedBitboard); break;
+            case Piece.Rook: attacks = AttackBitboard.Rook(square, OccupiedBitboard); break;
+            case Piece.Queen: attacks = AttackBitboard.Queen(square, OccupiedBitboard); break;
+            case Piece.King: attacks = AttackBitboard.King(square); break;
+            default: attacks = 0; break;
+        }
+        return ToSquares(attacks);
+    }
+
+    private static List<int> ToSquares(ulong bitboard)
+    {
+        List<int> squares = new List<int>();
+        while (bitboard != 0)
+            squares.Add(Bitboard.Pop(ref bitboard));
+        return squares;
     }
 
     /// <summary>

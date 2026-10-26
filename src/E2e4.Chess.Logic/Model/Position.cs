@@ -145,14 +145,7 @@ public sealed partial class Position : IEquatable<Position>
     public Position(string fen)
         : this()
     {
-        try
-        {
-            ParseFen(fen);
-        }
-        catch (FormatException)
-        {
-            ParseFen(StartingFEN);
-        }
+        Load(PositionSetup.TryParse(fen, out PositionSetup? parsed) && parsed.IsPlayable() ? parsed : PositionSetup.Standard());
     }
 
     /// <summary>

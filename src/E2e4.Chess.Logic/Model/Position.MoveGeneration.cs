@@ -29,6 +29,23 @@ public sealed partial class Position : IEquatable<Position>
     }
 
     /// <summary>
+    /// Returns the legal moves of the piece on the given square for the side to move; empty when the square is
+    /// empty or holds a piece of the other side. Each promotion counts as a separate move.
+    /// </summary>
+    /// <param name="square">The square of the piece.</param>
+    /// <returns>The legal moves from the square.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The square is outside 0 to 63.</exception>
+    public List<int> LegalMovesFrom(int square)
+    {
+        if ((uint)square > 63)
+            throw new ArgumentOutOfRangeException(nameof(square));
+
+        List<int> moves = LegalMoves();
+        moves.RemoveAll(move => Move.From(move) != square);
+        return moves;
+    }
+
+    /// <summary>
     /// Populates the given array with the legal moves for the position and
     /// returns the number of legal moves.
     /// </summary>

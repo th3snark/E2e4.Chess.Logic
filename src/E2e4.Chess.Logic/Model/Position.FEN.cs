@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Text;
 
 namespace E2e4.Chess.Logic.Model;
@@ -14,7 +13,11 @@ public sealed partial class Position : IEquatable<Position>
     /// <summary>
     /// Attempts to create a position from the given FEN string. Unlike the
     /// constructor, which substitutes the starting position, this method reports
-    /// failure for any FEN string that does not describe a legal board layout.
+    /// failure for any FEN string that does not describe a playable position. The
+    /// rules are those of <see cref="PositionSetup.Validate"/>: a missing counter or
+    /// side to move takes its default (White to move, no castling, no en passant,
+    /// clocks at their start), and any error it reports makes the parse fail, while
+    /// its warnings (a position no game could reach, or one that has ended) do not.
     /// </summary>
     /// <param name="fen">The FEN string to parse.</param>
     /// <param name="position">The parsed position, or null if the FEN string is
@@ -22,278 +25,50 @@ public sealed partial class Position : IEquatable<Position>
     /// <returns>Whether the FEN string was valid.</returns>
     public static bool TryParse(string? fen, [NotNullWhen(true)] out Position? position)
     {
-        return TryParseBoard(fen, false, out position);
-    }
-
-    // allowOpponentInCheck lets PositionSetup measure attacks on a board whose other fields are not yet consistent.
-    internal static bool TryParseBoard(string? fen, bool allowOpponentInCheck, [NotNullWhen(true)] out Position? position)
-    {
-        Position candidate = new Position();
-        try
-        {
-            candidate.ParseFen(fen, allowOpponentInCheck);
-        }
-        catch (FormatException)
-        {
-            position = null;
-            return false;
-        }
-        position = candidate;
-        return true;
+        position = PositionSetup.TryParse(fen, out PositionSetup? setup) ? setup.ToPosition() : null;
+        return position != null;
     }
 
     /// <summary>
-    /// Resets every piece of position state to that of an empty board, so that a
-    /// failed parse can never leave remnants behind.
+    /// Builds the position of a setup that has no errors; the caller has checked.
     /// </summary>
-    private void ResetState()
+    internal static Position Create(PositionSetup setup)
     {
-        Array.Clear(Board, 0, Board.Length);
-        Array.Clear(PieceBitboards, 0, PieceBitboards.Length);
-        OccupiedBitboard = 0;
-        SideToMove = Colour.White;
-        HalfMoves = 0;
-        _rootHalfMoves = 0;
-        Castling = CastlingRights.None;
-        EnPassantSquare = InvalidSquare;
-        for (int i = 0; i < EnPassantHistory.Length; i++)
-            EnPassantHistory[i] = InvalidSquare;
-        FiftyMovesClock = 0;
-        Array.Clear(FiftyMovesHistory, 0, FiftyMovesHistory.Length);
-        ZobristKey = 0;
-        Array.Clear(ZobristKeyHistory, 0, ZobristKeyHistory.Length);
-        Array.Clear(CastlingHistory, 0, CastlingHistory.Length);
+        Position position = new Position();
+        position.Load(setup);
+        return position;
     }
 
-    /// <summary>
-    /// Parses the given FEN string and changes the position's state to represent
-    /// that of the FEN string. The position is reset first, so a position is
-    /// either fully described by the FEN string or left empty.
-    /// </summary>
-    /// <param name="fen">The FEN string to parse.</param>
-    /// <param name="allowOpponentInCheck">Accept a position whose side not to move is in check.</param>
-    /// <exception cref="FormatException">The FEN string is invalid.</exception>
-    private void ParseFen(string? fen, bool allowOpponentInCheck = false)
+    private void Load(PositionSetup setup)
     {
-        ResetState();
-
-        if (fen == null)
-            throw new FormatException("The FEN string is null.");
-
-        if (fen.Length > MaxFenLength)
-            throw new FormatException("The FEN string is longer than " + MaxFenLength + " characters.");
-
-        // Split FEN into terms based on whitespace.
-        string[] terms = fen.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-        if (terms.Length < 2)
-            throw new FormatException("A FEN string needs at least piece placement and side to move.");
-
-        ParsePiecePlacement(terms[0]);
-
-        // Determine side to move.
-        if (terms[1] == "w")
-            SideToMove = Colour.White;
-        else if (terms[1] == "b")
-            SideToMove = Colour.Black;
-        else
-            throw new FormatException("The side to move must be 'w' or 'b'.");
-
-        if (terms.Length > 2)
-            ParseCastlingRights(terms[2]);
-
-        if (terms.Length > 3)
-            ParseEnPassantSquare(terms[3]);
-
-        // Determine fifty-moves clock and plies advanced.
-        if (terms.Length > 4)
-        {
-            FiftyMovesClock = ParseCounter(terms[4], 0);
-            if (FiftyMovesClock > MaxFiftyMovesClock)
-                throw new FormatException("The fifty-moves clock exceeds the supported range.");
-        }
-        if (terms.Length > 5)
-        {
-            long halfMoves = 2L * (ParseCounter(terms[5], 1) - 1) + SideToMove;
-            if (halfMoves >= HalfMovesLimit)
-                throw new FormatException("The move number exceeds the supported game length.");
-            HalfMoves = (int)halfMoves;
-        }
-
-        // Initialize history information.
-        _rootHalfMoves = HalfMoves;
-        EnPassantHistory[HalfMoves] = EnPassantSquare;
-        FiftyMovesHistory[HalfMoves] = FiftyMovesClock;
-        CastlingHistory[HalfMoves] = Castling;
-
-        // Initialize bitboards.
         for (int square = 0; square < Board.Length; square++)
-            if (Board[square] != Piece.Empty)
+        {
+            int piece = setup[square];
+            Board[square] = piece;
+            if (piece != Piece.Empty)
             {
-                int colour = Board[square] & Colour.Mask;
-                PieceBitboards[Board[square]] |= 1UL << square;
+                int colour = piece & Colour.Mask;
+                PieceBitboards[piece] |= 1UL << square;
                 PieceBitboards[colour] |= 1UL << square;
                 OccupiedBitboard |= 1UL << square;
             }
+        }
 
-        // The side not to move cannot be in check (this also rules out adjacent kings); such a
-        // position lets the mover capture a king, which move generation cannot represent.
-        if (!allowOpponentInCheck && InCheck(1 - SideToMove))
-            throw new FormatException("The side not to move is in check, or the kings are adjacent.");
+        SideToMove = setup.SideToMove;
+        Castling = setup.Castling;
+        EnPassantSquare = setup.EnPassantSquare;
+        FiftyMovesClock = setup.FiftyMovesClock;
+        HalfMoves = (int)(2L * (setup.MoveNumber - 1) + SideToMove);
 
-        // Initialize Zobrist key and history.
+        // History starts here: moves can only be unmade back to this ply.
+        _rootHalfMoves = HalfMoves;
+        for (int ply = 0; ply < EnPassantHistory.Length; ply++)
+            EnPassantHistory[ply] = InvalidSquare;
+        EnPassantHistory[HalfMoves] = EnPassantSquare;
+        FiftyMovesHistory[HalfMoves] = FiftyMovesClock;
+        CastlingHistory[HalfMoves] = Castling;
         ZobristKey = GetZobristKey();
         ZobristKeyHistory[HalfMoves] = ZobristKey;
-    }
-
-    /// <summary>
-    /// Populates the squares from the piece placement field of a FEN string and
-    /// checks the board is a legal layout: eight ranks of eight files, one king
-    /// per colour, no pawns on the first or last rank, and no more material than the
-    /// starting pieces and promotions can account for.
-    /// </summary>
-    private void ParsePiecePlacement(string placement)
-    {
-        int file = 0;
-        int rank = 0;
-        int[] kings = new int[2];
-        int[][] counts = { new int[Piece.King + 1], new int[Piece.King + 1] };
-
-        foreach (char c in placement)
-        {
-            if (c == '/')
-            {
-                if (file != 8 || rank == 7)
-                    throw new FormatException("Each of the eight ranks must describe eight files.");
-                file = 0;
-                rank++;
-            }
-            else if (c >= '1' && c <= '8')
-            {
-                file += c - '0';
-                if (file > 8)
-                    throw new FormatException("A rank describes more than eight files.");
-            }
-            else
-            {
-                int colour = char.IsUpper(c) ? Colour.White : Colour.Black;
-                int piece = Piece.FromInitial(c);
-                if (piece == Piece.Empty)
-                    throw new FormatException("Unknown piece '" + c + "'.");
-                if (piece == Piece.King)
-                    kings[colour]++;
-                else if (piece == Piece.Pawn && (rank == 0 || rank == 7))
-                    throw new FormatException("Pawns cannot stand on the first or last rank.");
-                if (file >= 8)
-                    throw new FormatException("A rank describes more than eight files.");
-                counts[colour][piece]++;
-                Board[file++ + rank * 8] = colour | piece;
-            }
-        }
-
-        if (rank != 7 || file != 8)
-            throw new FormatException("A FEN string must describe eight ranks of eight files.");
-        if (kings[Colour.White] != 1 || kings[Colour.Black] != 1)
-            throw new FormatException("Each side must have exactly one king.");
-
-        RequirePlausibleMaterial(counts[Colour.White]);
-        RequirePlausibleMaterial(counts[Colour.Black]);
-    }
-
-    /// <summary>
-    /// Rejects a side with more than eight pawns, or with more extra queens, rooks, bishops and
-    /// knights than its missing pawns could have promoted into (every promotion costs a pawn).
-    /// </summary>
-    private static void RequirePlausibleMaterial(int[] counts)
-    {
-        int pawns = counts[Piece.Pawn];
-        if (pawns > 8)
-            throw new FormatException("A side cannot have more than eight pawns.");
-
-        int promoted = Math.Max(0, counts[Piece.Queen] - 1)
-                       + Math.Max(0, counts[Piece.Rook] - 2)
-                       + Math.Max(0, counts[Piece.Bishop] - 2)
-                       + Math.Max(0, counts[Piece.Knight] - 2);
-        if (pawns + promoted > 8)
-            throw new FormatException("A side has more pieces than its pawns could have promoted into.");
-    }
-
-    /// <summary>
-    /// Parses the castling rights field, requiring the king and rook concerned
-    /// to stand on their original squares.
-    /// </summary>
-    private void ParseCastlingRights(string rights)
-    {
-        if (rights == "-")
-            return;
-        if (rights.Length == 0 || rights.Length > 4)
-            throw new FormatException("Invalid castling rights.");
-
-        foreach (char c in rights)
-        {
-            switch (c)
-            {
-                case 'K':
-                    RequireCastlingPieces(Colour.White, 60, 63);
-                    Castling |= CastlingRights.WhiteKingside;
-                    break;
-                case 'Q':
-                    RequireCastlingPieces(Colour.White, 60, 56);
-                    Castling |= CastlingRights.WhiteQueenside;
-                    break;
-                case 'k':
-                    RequireCastlingPieces(Colour.Black, 4, 7);
-                    Castling |= CastlingRights.BlackKingside;
-                    break;
-                case 'q':
-                    RequireCastlingPieces(Colour.Black, 4, 0);
-                    Castling |= CastlingRights.BlackQueenside;
-                    break;
-                default:
-                    throw new FormatException("Invalid castling rights.");
-            }
-        }
-    }
-
-    private void RequireCastlingPieces(int colour, int kingSquare, int rookSquare)
-    {
-        if (Board[kingSquare] != (colour | Piece.King) || Board[rookSquare] != (colour | Piece.Rook))
-            throw new FormatException("A castling right requires the king and rook on their original squares.");
-    }
-
-    /// <summary>
-    /// Parses the en passant field, requiring a pawn that has just advanced two
-    /// squares past the empty target square.
-    /// </summary>
-    private void ParseEnPassantSquare(string field)
-    {
-        if (field == "-")
-            return;
-
-        // After white moves (black to move) the target is on rank 3; otherwise rank 6.
-        char expectedRank = SideToMove == Colour.Black ? '3' : '6';
-        if (field.Length != 2 || field[0] < 'a' || field[0] > 'h' || field[1] != expectedRank)
-            throw new FormatException("Invalid en passant square.");
-
-        int target = Square.SquareAt(field);
-        int pushed = SideToMove == Colour.Black ? target - 8 : target + 8;
-        int origin = SideToMove == Colour.Black ? target + 8 : target - 8;
-        int pawn = (SideToMove == Colour.Black ? Colour.White : Colour.Black) | Piece.Pawn;
-        if (Board[target] != Piece.Empty || Board[origin] != Piece.Empty || Board[pushed] != pawn)
-            throw new FormatException("The en passant square is inconsistent with the board.");
-
-        EnPassantSquare = target;
-    }
-
-    /// <summary>
-    /// Parses a non-negative decimal counter, rejecting signs, overflow and
-    /// values below the minimum.
-    /// </summary>
-    private static int ParseCounter(string text, int minimum)
-    {
-        int value;
-        if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out value) || value < minimum)
-            throw new FormatException("Invalid move counter '" + text + "'.");
-        return value;
     }
 
     /// <summary>

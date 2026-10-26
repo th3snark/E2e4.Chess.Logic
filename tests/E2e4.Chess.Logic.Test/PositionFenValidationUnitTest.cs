@@ -1,3 +1,4 @@
+using System.Linq;
 using E2e4.Chess.Logic.Bitboards;
 using E2e4.Chess.Logic.Model;
 using Xunit;
@@ -145,5 +146,42 @@ public class PositionFenValidationUnitTest
             Assert.Equal(expected.PieceBitboards[piece], position.PieceBitboards[piece]);
         Assert.Equal(expected.ZobristKey, position.ZobristKey);
         Assert.True(position.Equals(expected));
+    }
+
+    [Theory]
+    [InlineData("4k3/8/8/8/8/8/8/R3K3")]                    // bare placement: White to move, nothing else
+    [InlineData("4k3/8/8/8/8/8/8/R3K3 b")]
+    public void ShortFensTakeTheirDefaults(string fen)
+    {
+        Assert.True(Position.TryParse(fen, out Position? position));
+        Assert.Equal(PositionSetup.TryParse(fen, out PositionSetup? setup) ? setup.ToFen() : null, position.GetFEN());
+    }
+
+    [Theory]
+    [InlineData("r3k2r/8/8/8/8/8/8/R3K2R w KK - 0 1")]
+    [InlineData("r3k2r/8/8/8/8/8/8/R3K2R w KQkqq - 0 1")]
+    public void RepeatedCastlingLettersAreRejectedByBothParsers(string fen)
+    {
+        Assert.False(Position.TryParse(fen, out _));
+        Assert.False(PositionSetup.TryParse(fen, out _));
+    }
+
+    [Theory]
+    [InlineData(Position.StartingFEN)]
+    [InlineData("r3k2r/8/8/3pP3/8/8/8/R3K2R w KQkq d6 0 20")]
+    [InlineData("4k3/8/8/8/8/3n1n2/8/4K3 w - - 0 10")]       // unreachable but playable
+    [InlineData("4k3/8/8/8/8/8/8/4K3 w - - 0 1")]            // dead position
+    [InlineData("4k3/8/8/8/8/8/8/R3K3 w - - 5 1")]
+    [InlineData("8/8/8/8/8/8/8/8 w - - 0 1")]                // no kings
+    [InlineData("4k3/8/8/8/8/8/8/R3K3 w KQ - 0 1")]          // castling without rooks
+    [InlineData("4k3/4P3/8/8/8/8/8/4K3 b - - 0 1")]          // opponent in check
+    [InlineData("4k3/8/8/8/8/8/8/R3K3 w - e3 0 1")]          // en passant without a pawn
+    public void PositionAcceptsExactlyWhatTheSetupHasNoErrorsFor(string fen)
+    {
+        Assert.True(PositionSetup.TryParse(fen, out PositionSetup? setup));
+        bool playable = setup.Validate().All(p => p.Severity != PositionProblemSeverity.Error);
+
+        Assert.Equal(playable, Position.TryParse(fen, out _));
+        Assert.Equal(playable, new Position(fen).GetFEN() == setup.ToFen());
     }
 }

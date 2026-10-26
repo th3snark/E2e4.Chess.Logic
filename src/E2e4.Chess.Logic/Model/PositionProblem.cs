@@ -8,7 +8,7 @@ public enum PositionProblemSeverity
     /// <summary>The setup cannot become a playable <see cref="Position"/>.</summary>
     Error,
 
-    /// <summary>The setup is playable but probably not what was meant.</summary>
+    /// <summary>The setup is playable but probably not what was meant, or cannot arise in a game.</summary>
     Warning,
 }
 
@@ -47,6 +47,18 @@ public enum PositionProblemKind
 
     /// <summary>The move number or fifty-moves clock is outside the supported range.</summary>
     InvalidCounters,
+
+    /// <summary>The side to move is in a check no single move could have delivered.</summary>
+    ImpossibleCheck,
+
+    /// <summary>A side's pawns have left their files by more captures than the other side has lost pieces.</summary>
+    PawnsNeedMoreCaptures,
+
+    /// <summary>The fifty-moves clock is larger than the half moves played, or non-zero after a two-square pawn advance.</summary>
+    InconsistentClock,
+
+    /// <summary>Neither side has the material to deliver checkmate.</summary>
+    InsufficientMaterial,
 }
 
 /// <summary>One thing found wrong with a <see cref="PositionSetup"/> by <see cref="PositionSetup.Validate"/>.</summary>
