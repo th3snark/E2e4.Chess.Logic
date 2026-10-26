@@ -30,6 +30,14 @@ and `net10.0` there is also `LegalMoves(Span<int>)`.
 For a position editor, `PositionSetup` accepts any arrangement while it is being edited, `Validate()` lists the problems
 (`PositionProblem`), and `ToPosition()` returns the playable `Position` once it is legal.
 
+For teaching tools, `Position` answers "why" questions about the board: `AttackersOf`, `DefendersOf`, `AttacksFrom`, `Checkers`, `Pins` and
+`HangingPieces` list squares (and `Pin`s), `LegalMovesFrom` and `Move.Find` classify a drag or arrow, and `Square.SameLine`/`Between` give the
+geometry of files, ranks and diagonals.
+
+For teaching tools, `Position` answers "why" questions about the board: `AttackersOf`, `DefendersOf`, `AttacksFrom`, `Checkers`, `Pins` and
+`HangingPieces` list squares (and `Pin`s), `LegalMovesFrom` and `Move.Find` classify a drag or arrow, and `Square.SameLine`/`Between` give the
+geometry of files, ranks and diagonals.
+
 ## Notes
 
 - `Position.TryParse` and `PositionSetup.TryParse` return `false` on bad input instead of throwing; they share one parser, so they accept

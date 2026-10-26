@@ -48,6 +48,113 @@ public sealed partial class Position : IEquatable<Position>
     }
 
     /// <summary>
+    /// Returns the squares of the enemy pieces that give check to the given side, in ascending square order;
+    /// empty when the side is not in check. Two entries mean a double check. The squares between a checking
+    /// slider and the king, where a block would go, are <see cref="Square.Between"/>.
+    /// </summary>
+    /// <param name="colour">The side whose king is tested.</param>
+    /// <returns>The squares of the checking pieces.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The colour is neither colour.</exception>
+    public List<int> Checkers(int colour)
+    {
+        CheckColour(colour);
+        ulong king = PieceBitboards[colour | Piece.King];
+        return king == 0 ? new List<int>() : AttackersOf(1 - colour, Bitboard.Read(king));
+    }
+
+    /// <summary>
+    /// Returns the pieces of the given colour that are pinned to their king, in ascending order of the pinned
+    /// square. Only absolute pins count (a pin against the king, not against a more valuable piece), and the
+    /// pinned piece may still move along the pin line; <see cref="LegalMovesFrom"/> says where it can go.
+    /// </summary>
+    /// <param name="colour">The side whose pieces are tested.</param>
+    /// <returns>The pins; the line of each is <see cref="Square.Between"/> the king and the pinner.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The colour is neither colour.</exception>
+    public List<Pin> Pins(int colour)
+    {
+        CheckColour(colour);
+        List<Pin> pins = new List<Pin>();
+        ulong kingBitboard = PieceBitboards[colour | Piece.King];
+        if (kingBitboard == 0)
+            return pins;
+
+        int king = Bitboard.Read(kingBitboard);
+        int enemy = 1 - colour;
+        ulong sliders = PieceBitboards[enemy | Piece.Bishop] | PieceBitboards[enemy | Piece.Rook] | PieceBitboards[enemy | Piece.Queen];
+        while (sliders != 0)
+        {
+            int pinner = Bitboard.Pop(ref sliders);
+            if (!Square.SameLine(king, pinner))
+                continue;
+
+            // A bishop moves on diagonals only and a rook on files and ranks only; a queen on either.
+            bool straight = Square.File(king) == Square.File(pinner) || Square.Rank(king) == Square.Rank(pinner);
+            int kind = Board[pinner] & Piece.Mask;
+            if ((kind == Piece.Bishop && straight) || (kind == Piece.Rook && !straight))
+                continue;
+
+            int blocker = -1;
+            int blockers = 0;
+            foreach (int square in Square.Between(king, pinner))
+            {
+                if (Board[square] == Piece.Empty)
+                    continue;
+                blocker = square;
+                blockers++;
+            }
+            if (blockers == 1 && (Board[blocker] & Colour.Mask) == colour)
+                pins.Add(new Pin(blocker, pinner));
+        }
+        pins.Sort((a, b) => a.Pinned.CompareTo(b.Pinned));
+        return pins;
+    }
+
+    /// <summary>
+    /// Returns the squares of the pieces that defend the piece on the given square: the pieces of its own
+    /// colour that attack the square, so that a capture there could be answered by a recapture. Empty when the
+    /// square is empty or the piece is undefended.
+    /// </summary>
+    /// <param name="square">The square of the defended piece.</param>
+    /// <returns>The squares of the defenders.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The square is outside 0 to 63.</exception>
+    public List<int> DefendersOf(int square)
+    {
+        if ((uint)square > 63)
+            throw new ArgumentOutOfRangeException(nameof(square));
+
+        int piece = Board[square];
+        return piece == Piece.Empty ? new List<int>() : AttackersOf(piece & Colour.Mask, square);
+    }
+
+    /// <summary>
+    /// Returns the squares of the given colour's pieces that are attacked and undefended, in ascending square
+    /// order. Kings are never listed. This is the simple teaching sense of a hanging piece: a defended piece
+    /// that an enemy pawn or other cheaper piece attacks can still lose material, and is not listed.
+    /// </summary>
+    /// <param name="colour">The side whose pieces are tested.</param>
+    /// <returns>The squares of the hanging pieces.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The colour is neither colour.</exception>
+    public List<int> HangingPieces(int colour)
+    {
+        CheckColour(colour);
+        List<int> hanging = new List<int>();
+        ulong pieces = PieceBitboards[colour] & ~PieceBitboards[colour | Piece.King];
+        while (pieces != 0)
+        {
+            int square = Bitboard.Pop(ref pieces);
+            if (IsAttacked(colour, square) && DefendersOf(square).Count == 0)
+                hanging.Add(square);
+        }
+        return hanging;
+    }
+
+    private static void CheckColour(int colour)
+    {
+        if (colour != Colour.White && colour != Colour.Black)
+            throw new ArgumentOutOfRangeException(nameof(colour));
+    }
+
+    /// <summary>
     /// Returns the squares of the pieces of the given colour that attack the given square (whatever stands on it),
     /// in ascending square order. With a king's square this lists the checkers.
     /// </summary>
@@ -57,8 +164,7 @@ public sealed partial class Position : IEquatable<Position>
     /// <exception cref="ArgumentOutOfRangeException">The colour is neither colour or the square is outside 0 to 63.</exception>
     public List<int> AttackersOf(int colour, int square)
     {
-        if (colour != Colour.White && colour != Colour.Black)
-            throw new ArgumentOutOfRangeException(nameof(colour));
+        CheckColour(colour);
         if ((uint)square > 63)
             throw new ArgumentOutOfRangeException(nameof(square));
 
