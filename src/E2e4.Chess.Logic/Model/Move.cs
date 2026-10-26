@@ -121,6 +121,36 @@ public static class Move
     }
 
     /// <summary>
+    /// Returns the legal move from one square to another, or <see cref="Invalid"/> when there is none. Unlike
+    /// <see cref="Create(Position, int, int, int)"/>, which encodes whatever it is given, this tells whether a
+    /// user's drag or arrow is a move, and it fills in the castling, en passant and promotion flags.
+    /// </summary>
+    /// <param name="position">The position the move is to be played on.</param>
+    /// <param name="from">The from square of the move.</param>
+    /// <param name="to">The to square of the move.</param>
+    /// <param name="promotion">The piece kind to promote to (<see cref="Piece.Queen"/>, <see cref="Piece.Rook"/>,
+    /// <see cref="Piece.Bishop"/> or <see cref="Piece.Knight"/>); <see cref="Piece.Empty"/> means a queen when
+    /// the move is a promotion.</param>
+    /// <returns>The legal move, or <see cref="Invalid"/>.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">A square is outside 0 to 63.</exception>
+    public static int Find(Position position, int from, int to, int promotion = Piece.Empty)
+    {
+        if ((uint)from > 63)
+            throw new ArgumentOutOfRangeException(nameof(from));
+        if ((uint)to > 63)
+            throw new ArgumentOutOfRangeException(nameof(to));
+
+        if (promotion == Piece.Empty)
+            promotion = Piece.Queen;
+        foreach (int move in position.LegalMovesFrom(from))
+        {
+            if (To(move) == to && (!IsPromotion(move) || (SpecialPiece(move) & Piece.Mask) == promotion))
+                return move;
+        }
+        return Invalid;
+    }
+
+    /// <summary>
     /// Returns a move to be played on the given position that has the given
     /// representation in coordinate notation.
     /// </summary>

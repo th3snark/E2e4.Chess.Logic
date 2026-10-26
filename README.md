@@ -30,10 +30,21 @@ and `net10.0` there is also `LegalMoves(Span<int>)`.
 For a position editor, `PositionSetup` accepts any arrangement while it is being edited, `Validate()` lists the problems
 (`PositionProblem`), and `ToPosition()` returns the playable `Position` once it is legal.
 
+For teaching tools, `Position` answers "why" questions about the board: `AttackersOf`, `DefendersOf`, `AttacksFrom`, `Checkers`, `Pins` and
+`HangingPieces` list squares (and `Pin`s), `LegalMovesFrom` and `Move.Find` classify a drag or arrow, and `Square.SameLine`/`Between` give the
+geometry of files, ranks and diagonals.
+
+For teaching tools, `Position` answers "why" questions about the board: `AttackersOf`, `DefendersOf`, `AttacksFrom`, `Checkers`, `Pins` and
+`HangingPieces` list squares (and `Pin`s), `LegalMovesFrom` and `Move.Find` classify a drag or arrow, and `Square.SameLine`/`Between` give the
+geometry of files, ranks and diagonals.
+
 ## Notes
 
-- `Position.TryParse` and `PositionSetup.TryParse` return `false` on bad input instead of throwing, and `Make`/`Unmake` throw at the
-  ply limit (`Position.HalfMovesLimit`) rather than overrun their buffers.
+- `Position.TryParse` and `PositionSetup.TryParse` return `false` on bad input instead of throwing; they share one parser, so they accept
+  the same FEN (a bare placement is fine, repeated castling letters are not) and `Position` accepts exactly what `PositionSetup.Validate()`
+  reports no errors for. Warnings (a position no game could reach, or one that has ended) do not stop a `Position`.
+  `Make`/`Unmake` throw at the ply limit
+  (`Position.HalfMovesLimit`) rather than overrun their buffers.
 - The library does no I/O and holds no global state; a `Position` is not thread-safe, so give each thread its own (`DeepClone`).
 
 ## Build and test
