@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <Product>E2e4 Chess Logic Tests</Product>
     <Description>xUnit tests for E2e4.Chess.Logic, including perft node-count checks.</Description>
   </PropertyGroup>
