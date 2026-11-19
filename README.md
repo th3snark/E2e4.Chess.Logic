@@ -4,7 +4,7 @@
 
 A small, dependency-free chess rules library for .NET: bitboard move generation, a `Position` model with `Make`/`Unmake`, FEN parsing
 and validation, Zobrist hashing, and `PositionSetup` for editing and validating positions. It targets `net45`, `netstandard2.0`,
-`netstandard2.1` and `net10.0`, so it runs on old and new runtimes and on Linux, macOS and Windows. Install from NuGet:
+`netstandard2.1`, `net10.0` and `net11.0`, so it runs on old and new runtimes and on Linux, macOS and Windows. Install from NuGet:
 `E2e4.Chess.Logic`.
 
 Move generation is checked against published perft node counts for the standard test positions.
@@ -24,8 +24,8 @@ if (Position.TryParse("not a fen", out Position? parsed)) { /* never reached */ 
 ```
 
 Moves are plain `int`s that `Move` packs and unpacks (`Move.From`, `Move.To`, `Move.IsCapture`, ...). `Position` exposes its state read-only
-(`Squares`, `SideToMove`, `Castling`, `EnPassantSquare`, `ZobristKey`, ...). `LegalMoves(int[])` avoids allocating; on `netstandard2.1`
-and `net10.0` there is also `LegalMoves(Span<int>)`.
+(`Squares`, `SideToMove`, `Castling`, `EnPassantSquare`, `ZobristKey`, ...). `LegalMoves(int[])` avoids allocating; on `netstandard2.1`,
+`net10.0` and `net11.0` there is also `LegalMoves(Span<int>)`.
 
 For a position editor, `PositionSetup` accepts any arrangement while it is being edited, `Validate()` lists the problems
 (`PositionProblem`), and `ToPosition()` returns the playable `Position` once it is legal.

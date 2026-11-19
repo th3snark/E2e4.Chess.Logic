@@ -12,15 +12,15 @@ Guidance for Claude Code (claude.ai/code) in this repository. See `README.md` fo
   (partial classes `Position.cs`, `.ChessLogic`, `.MoveGeneration`, `.MoveCompletion`, `.FEN`, `.Zobrist`), `Move`, `Piece`/`Colour`/`Square`,
   and `PositionSetup` (lenient, editable, validating position; `Validate()` lists `PositionProblem`s, `ToPosition()` gives the playable one).
   `Polyfills.cs` supplies `[NotNullWhen]` and friends for the old TFMs.
-- `tests/E2e4.Chess.Logic.Test/` — xUnit tests (net10.0), including perft node counts for six reference positions: treat any change in those
-  counts as a move-generation bug. `PortableBitOperationsUnitTest` checks the portable bit tricks against the intrinsics, because the
-  tests only run on net10.0 while the library also compiles for net45/netstandard.
+- `tests/E2e4.Chess.Logic.Test/` — xUnit tests (net10.0 and net11.0), including perft node counts for six reference positions: treat any
+  change in those counts as a move-generation bug. `PortableBitOperationsUnitTest` checks the portable bit tricks against the intrinsics,
+  because the tests only run on net10.0/net11.0 while the library also compiles for net45/netstandard.
 - `assets/icon.png` / `icon.svg` — the package icon. Do not redraw or replace it.
 
 ## Rules
 
-- Multi-targets `net45;netstandard2.0;netstandard2.1;net10.0`: keep code compatible with the lowest TFM (no newer APIs) unless you narrow
-  `TargetFrameworks`. `BitOperations` is used under `#if NET`, `PortableBitOperations` everywhere else.
+- Multi-targets `net45;netstandard2.0;netstandard2.1;net10.0;net11.0`: keep code compatible with the lowest TFM (no newer APIs) unless you
+  narrow `TargetFrameworks`. `BitOperations` is used under `#if NET`, `PortableBitOperations` everywhere else.
 - No dependencies, no WPF/WinForms/`System.Drawing`, no I/O. CI fails if the library gains a package dependency.
 - Public surface is small on purpose (`Position`, `Move`, `Piece`/`Colour`/`Square`, `PositionSetup`, `CastlingRights`, `PositionProblem`,
   `AlgebraicNotationFormat`); `Bitboard` and the raw board arrays are `internal` (tests use `InternalsVisibleTo`).
