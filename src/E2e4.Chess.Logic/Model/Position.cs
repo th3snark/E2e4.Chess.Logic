@@ -66,24 +66,31 @@ public sealed partial class Position : IEquatable<Position>
     internal ulong OccupiedBitboard;
 
     /// <summary>
-    /// The EnPassantSquare values for every ply up to and including the current ply.
+    /// The number of plies the history arrays hold at first. They double as the game goes on, up to
+    /// <see cref="HalfMovesLimit"/>, so a position that makes few moves stays small.
     /// </summary>
-    internal readonly int[] EnPassantHistory;
+    internal const int InitialHistoryCapacity = 64;
+
+    /// <summary>
+    /// The EnPassantSquare values for every ply up to and including the current ply. Entries past the current ply hold
+    /// <see cref="InvalidSquare"/>. The four history arrays always have the same length.
+    /// </summary>
+    internal int[] EnPassantHistory;
 
     /// <summary>
     /// The FiftyMovesClock values for every ply up to and including the current ply.
     /// </summary>
-    internal readonly int[] FiftyMovesHistory;
+    internal int[] FiftyMovesHistory;
 
     /// <summary>
     /// The ZobristKey values for every ply up to and including the current ply.
     /// </summary>
-    internal readonly ulong[] ZobristKeyHistory;
+    internal ulong[] ZobristKeyHistory;
 
     /// <summary>
     /// The Castling values for every ply up to and including the current ply.
     /// </summary>
-    internal readonly CastlingRights[] CastlingHistory;
+    internal CastlingRights[] CastlingHistory;
 
     /// <summary>
     /// The ply the position was created at (non-zero for a FEN with a move number). Moves can only be
@@ -155,10 +162,10 @@ public sealed partial class Position : IEquatable<Position>
     {
         Board = new int[64];
         PieceBitboards = new ulong[16];
-        EnPassantHistory = new int[HalfMovesLimit];
-        FiftyMovesHistory = new int[HalfMovesLimit];
-        ZobristKeyHistory = new ulong[HalfMovesLimit];
-        CastlingHistory = new CastlingRights[HalfMovesLimit];
+        EnPassantHistory = NewEnPassantHistory(InitialHistoryCapacity);
+        FiftyMovesHistory = new int[InitialHistoryCapacity];
+        ZobristKeyHistory = new ulong[InitialHistoryCapacity];
+        CastlingHistory = new CastlingRights[InitialHistoryCapacity];
         EnPassantSquare = InvalidSquare;
     }
 
@@ -180,17 +187,52 @@ public sealed partial class Position : IEquatable<Position>
 
         // Only the history up to the current ply is meaningful; the rest holds the defaults a
         // freshly parsed position has (no en passant square), so copy the used prefix.
-        EnPassantHistory = new int[HalfMovesLimit];
-        FiftyMovesHistory = new int[HalfMovesLimit];
-        ZobristKeyHistory = new ulong[HalfMovesLimit];
-        CastlingHistory = new CastlingRights[HalfMovesLimit];
         int used = source.HalfMoves + 1;
+        int capacity = HistoryCapacityFor(source.HalfMoves);
+        EnPassantHistory = NewEnPassantHistory(capacity);
+        FiftyMovesHistory = new int[capacity];
+        ZobristKeyHistory = new ulong[capacity];
+        CastlingHistory = new CastlingRights[capacity];
         Array.Copy(source.EnPassantHistory, EnPassantHistory, used);
         Array.Copy(source.FiftyMovesHistory, FiftyMovesHistory, used);
         Array.Copy(source.ZobristKeyHistory, ZobristKeyHistory, used);
         Array.Copy(source.CastlingHistory, CastlingHistory, used);
-        for (int ply = used; ply < HalfMovesLimit; ply++)
-            EnPassantHistory[ply] = InvalidSquare;
+    }
+
+    /// <summary>
+    /// Returns the history capacity that holds the given ply: the initial capacity, doubled as often as needed, and at
+    /// most <see cref="HalfMovesLimit"/>.
+    /// </summary>
+    private static int HistoryCapacityFor(int ply)
+    {
+        int capacity = InitialHistoryCapacity;
+        while (capacity <= ply && capacity < HalfMovesLimit)
+            capacity *= 2;
+        return Math.Min(capacity, HalfMovesLimit);
+    }
+
+    private static int[] NewEnPassantHistory(int capacity)
+    {
+        int[] history = new int[capacity];
+        for (int ply = 0; ply < capacity; ply++)
+            history[ply] = InvalidSquare;
+        return history;
+    }
+
+    /// <summary>
+    /// Grows the history arrays, keeping their contents, so they hold the given ply.
+    /// </summary>
+    private void EnsureHistoryCapacity(int ply)
+    {
+        if (ply < ZobristKeyHistory.Length)
+            return;
+        int capacity = HistoryCapacityFor(ply);
+        int[] enPassant = NewEnPassantHistory(capacity);
+        Array.Copy(EnPassantHistory, enPassant, EnPassantHistory.Length);
+        EnPassantHistory = enPassant;
+        Array.Resize(ref FiftyMovesHistory, capacity);
+        Array.Resize(ref ZobristKeyHistory, capacity);
+        Array.Resize(ref CastlingHistory, capacity);
     }
 
     #endregion

@@ -194,6 +194,163 @@ public static class Move
     }
 
     /// <summary>
+    /// Returns the legal move that the given text names in standard algebraic notation (SAN), such as <c>e4</c>,
+    /// <c>Nbd7</c>, <c>exd6</c>, <c>e8=Q+</c> or <c>O-O-O</c>, or <see cref="Invalid"/> when the text names no legal
+    /// move or more than one.
+    /// </summary>
+    /// <remarks>
+    /// <para>The reader is lenient about what does not change the meaning: check and mate marks (<c>+</c>, <c>#</c>),
+    /// annotation glyphs (<c>!</c>, <c>?</c>), the capture mark (<c>x</c> or <c>:</c>), the <c>=</c> before a
+    /// promotion piece, <c>e.p.</c>, zeros for castling (<c>0-0</c>), long algebraic notation (<c>Ng1-f3</c>,
+    /// <c>e2e4</c>, <c>e7e8q</c>) and surrounding white space are all accepted. It is strict about what does: the
+    /// piece letter must be upper case (<c>b</c> is a file, <c>B</c> a bishop), a promotion must name its piece, and
+    /// a move that matches several legal moves is ambiguous and returns <see cref="Invalid"/>.</para>
+    /// <para>The position is only read, never changed. Bad text returns <see cref="Invalid"/>; it never throws.</para>
+    /// </remarks>
+    /// <param name="position">The position the move is to be played on.</param>
+    /// <param name="text">The move in algebraic notation.</param>
+    /// <returns>The legal move, or <see cref="Invalid"/>.</returns>
+    public static int FromAlgebraicNotation(Position position, string? text)
+    {
+        if (position == null)
+            throw new ArgumentNullException(nameof(position));
+        if (text == null)
+            return Invalid;
+
+        // Trim white space and the marks that do not change which move is meant.
+        int end = text.Length;
+        int start = 0;
+        while (start < end && char.IsWhiteSpace(text[start]))
+            start++;
+        while (end > start && (char.IsWhiteSpace(text[end - 1]) || text[end - 1] == '+' || text[end - 1] == '#'
+            || text[end - 1] == '!' || text[end - 1] == '?'))
+            end--;
+        if (end - start > 3 && string.CompareOrdinal(text, end - 4, "e.p.", 0, 4) == 0)
+            end -= 4;
+        while (end > start && char.IsWhiteSpace(text[end - 1]))
+            end--;
+        if (end - start < 2 || end - start > 12)
+            return Invalid;
+
+        string body = text.Substring(start, end - start);
+        switch (body)
+        {
+            case "O-O":
+            case "o-o":
+            case "0-0":
+                return FindCastle(position, kingside: true);
+            case "O-O-O":
+            case "o-o-o":
+            case "0-0-0":
+                return FindCastle(position, kingside: false);
+        }
+
+        // The moving piece: an upper-case letter first, otherwise a pawn.
+        int i = 0;
+        int pieceType = Piece.Pawn;
+        int letter = PieceTypeFromLetter(body[0]);
+        if (letter != Piece.Empty && char.IsUpper(body[0]))
+        {
+            pieceType = letter;
+            i = 1;
+        }
+
+        // The promotion piece, last: "=Q", "Q", or a lower-case letter after the rank ("e7e8q").
+        int last = body.Length - 1;
+        int promotion = Piece.Empty;
+        if (last > i && !char.IsDigit(body[last]))
+        {
+            promotion = PieceTypeFromLetter(body[last]);
+            if (promotion == Piece.Empty || promotion == Piece.King || promotion == Piece.Pawn)
+                return Invalid;
+            last--;
+            if (last > i && (body[last] == '=' || body[last] == '/'))
+                last--;
+        }
+
+        // The destination square: the last two characters left.
+        if (last - 1 < i)
+            return Invalid;
+        int to = ParseSquare(body[last - 1], body[last]);
+        if (to < 0 || char.IsUpper(body[last - 1]))
+            return Invalid;
+
+        // Whatever is in between: an optional from-file, from-rank, capture mark and dash.
+        int fromFile = -1;
+        int fromRank = -1;
+        for (int k = i; k < last - 1; k++)
+        {
+            char c = body[k];
+            if (c >= 'a' && c <= 'h' && fromFile < 0 && fromRank < 0)
+                fromFile = c - 'a';
+            else if (c >= '1' && c <= '8' && fromRank < 0)
+                fromRank = '8' - c;
+            else if ((c == 'x' || c == ':' || c == '-') && k == last - 2)
+                continue;
+            else if ((c == 'x' || c == ':') && k == last - 3 && body[last - 2] == '-')
+                continue;
+            else
+                return Invalid;
+        }
+
+        // Coordinate notation (g1f3, e1g1) gives the full from square and no piece letter: any piece may move.
+        bool coordinates = i == 0 && fromFile >= 0 && fromRank >= 0;
+
+        int[] moves = new int[Position.MaxMoves];
+        int count = position.LegalMoves(moves);
+        int found = Invalid;
+        for (int m = 0; m < count; m++)
+        {
+            int move = moves[m];
+            if (To(move) != to || (!coordinates && (MovingPiece(move) & Piece.Mask) != pieceType))
+                continue;
+            // Castling is written O-O, or as the king's from and to squares (e1g1, Ke1g1) in long notation.
+            if (IsCastle(move) && (fromFile < 0 || fromRank < 0))
+                continue;
+            if (fromFile >= 0 && Square.File(From(move)) != fromFile)
+                continue;
+            if (fromRank >= 0 && Square.Rank(From(move)) != fromRank)
+                continue;
+            if (IsPromotion(move) ? (SpecialPiece(move) & Piece.Mask) != promotion : promotion != Piece.Empty)
+                continue;
+            if (found != Invalid)
+                return Invalid;
+            found = move;
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// Returns the legal castling move to the given side, or <see cref="Invalid"/>.
+    /// </summary>
+    private static int FindCastle(Position position, bool kingside)
+    {
+        foreach (int move in position.LegalMoves())
+        {
+            if (IsCastle(move) && (To(move) > From(move)) == kingside)
+                return move;
+        }
+        return Invalid;
+    }
+
+    /// <summary>
+    /// Returns the piece type for a piece letter in either case, or <see cref="Piece.Empty"/>.
+    /// </summary>
+    private static int PieceTypeFromLetter(char letter)
+    {
+        switch (char.ToUpperInvariant(letter))
+        {
+            case 'P': return Piece.Pawn;
+            case 'N': return Piece.Knight;
+            case 'B': return Piece.Bishop;
+            case 'R': return Piece.Rook;
+            case 'Q': return Piece.Queen;
+            case 'K': return Piece.King;
+            default: return Piece.Empty;
+        }
+    }
+
+    /// <summary>
     /// Returns the square for a file letter and rank digit, or -1 if they do not name a square.
     /// </summary>
     private static int ParseSquare(char file, char rank)
