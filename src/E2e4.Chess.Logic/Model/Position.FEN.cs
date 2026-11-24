@@ -60,10 +60,10 @@ public sealed partial class Position : IEquatable<Position>
         FiftyMovesClock = setup.FiftyMovesClock;
         HalfMoves = (int)(2L * (setup.MoveNumber - 1) + SideToMove);
 
-        // History starts here: moves can only be unmade back to this ply.
+        // History starts here: moves can only be unmade back to this ply. A freshly constructed position's history is
+        // empty (en passant entries already hold InvalidSquare), so it only needs room for this ply.
         _rootHalfMoves = HalfMoves;
-        for (int ply = 0; ply < EnPassantHistory.Length; ply++)
-            EnPassantHistory[ply] = InvalidSquare;
+        EnsureHistoryCapacity(HalfMoves);
         EnPassantHistory[HalfMoves] = EnPassantSquare;
         FiftyMovesHistory[HalfMoves] = FiftyMovesClock;
         CastlingHistory[HalfMoves] = Castling;

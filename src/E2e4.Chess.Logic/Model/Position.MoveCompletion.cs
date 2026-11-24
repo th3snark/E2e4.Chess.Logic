@@ -86,6 +86,8 @@ public sealed partial class Position : IEquatable<Position>
         }
         FiftyMovesClock++;
         HalfMoves++;
+        if (HalfMoves >= ZobristKeyHistory.Length)
+            EnsureHistoryCapacity(HalfMoves);
 
         // A move from or to a king or rook home square forfeits the matching castling rights.
         // This covers king moves, rook moves, castling itself and capturing a rook on its corner.
@@ -253,6 +255,8 @@ public sealed partial class Position : IEquatable<Position>
         SideToMove = 1 - SideToMove;
         FiftyMovesClock++;
         HalfMoves++;
+        if (HalfMoves >= ZobristKeyHistory.Length)
+            EnsureHistoryCapacity(HalfMoves);
         FiftyMovesHistory[HalfMoves] = FiftyMovesClock;
         ZobristKeyHistory[HalfMoves] = ZobristKey;
         CastlingHistory[HalfMoves] = Castling;

@@ -1,7 +1,8 @@
 # Game record design
 
 How a whole game (its moves, variations and annotations) should be held, so that clicking any move shows that position at once. This note
-records the research and the decisions behind the game-record rows in [roadmap.md](roadmap.md). Nothing here is implemented yet.
+records the research and the decisions behind the design. The Logic part is implemented; what is still missing is in
+[roadmap.md](roadmap.md), and the Controls and Fics.Client parts are listed at the end.
 
 ## What other projects do
 
@@ -33,7 +34,8 @@ The [PGN standard](https://www.saremba.de/chessgml/standards/pgn/pgn-complete.ht
    - A click costs O(1): the board gets `node.Fen`, and `Move.From`/`Move.To` give the last-move squares.
    - That is roughly 150–250 bytes per node, which is small even with many variations.
 3. **Get a `Position` by replaying.**
-   - A `Position` carries its undo history (about 20 KB at `HalfMovesLimit` 1024), so it isn't cached per node.
+   - A `Position` carries its undo history (a little over 1 KB at first, growing with the game to about 20 KB at
+     `HalfMovesLimit` 1024), so it isn't cached per node.
    - `node.ToPosition()` replays the moves from the root. That is fast, and it keeps repetition and 50-move history correct for playing on
      or for the analysis queries.
 4. **Use the in-memory move as is, and PGN for interchange.** A compact binary encoding (a 16-bit move plus tokens, as Scid does) is optional
@@ -47,30 +49,33 @@ The [PGN standard](https://www.saremba.de/chessgml/standards/pgn/pgn-complete.ht
    - Logic lists the embedded `[%name args]` commands and promotes `%clk`/`%emt` to typed times.
    - Drawing `%cal`/`%csl` is the UI's job.
 
-## API sketch (E2e4.Chess.Logic)
+## The API (E2e4.Chess.Logic)
 
-Names are provisional.
+The game types are in the `E2e4.Chess.Logic.Games` namespace.
 
-- **SAN reader.** Resolves a SAN string against the legal moves.
-  - It tolerates a missing `+`/`#` and accepts `0-0` for castling.
+- **SAN reader.** `Move.FromAlgebraicNotation(position, text)` resolves a SAN string against the legal moves.
+  - It tolerates a missing or extra `+`/`#`, glyphs such as `!?`, `0-0` for castling and long algebraic notation.
   - It returns `Move.Invalid` for an ambiguous or illegal move.
 - **`GameRecord`** holds:
-  - the tag pairs (ordered, with Seven Tag Roster helpers);
-  - the start position (a FEN, or the standard start);
+  - the tag pairs (ordered, with Seven Tag Roster properties such as `White` and `Result`);
+  - the start position (`GameRecord.TryCreate(fen)`, or the standard start);
   - the `Root` node;
-  - the result.
+  - `Errors`, the problems found when it was read.
 - **`GameNode`** state: `Parent`, `Move`, `Children`, `Ply`, `San`, `Fen`, `ZobristKey`, `Comment`, `PreComment` (before a variation's
   first move), `Nags`, `Clock` and `MoveTime` (nullable `TimeSpan`).
 - **`GameNode`** operations:
-  - `AddMove(int)` and `AddMove(string san)`. These reuse an existing child for the same move rather than duplicating it.
+  - `AddMove(int)` and `TryAddMove(string)`. These reuse an existing child for the same move rather than duplicating it.
   - `PromoteToMainLine`, `Promote`, `Demote` and `Remove`.
   - `MainLine()` and `ToPosition()`.
-  - A path address (child indices, e.g. `0.0.2.0`) for selection, undo and serialization.
-- **PGN.**
+  - `GetPath()`, a list of child indices (all zeros on the main line), which `GameRecord.NodeAt` turns back into the node.
+- **PGN.** `Pgn.Parse`, `Pgn.TryParseGame` and `Pgn.Write`.
   - Reading parses a string that may hold several games, with variations, comments, NAGs and clocks.
   - Reading is lenient: an unreadable move ends that line and is recorded as an error. It never throws.
   - Writing round-trips what was read.
   - No file I/O.
+- **Comment commands.** `PgnCommand` finds, sets and removes `[%name args]` commands in comment text.
+- **Binary form.** `GameEncoding.Encode` and `TryDecode`: two bytes per move plus tokens.
+- **Opening index.** `PositionIndex` collects games by position key, with move counts and results.
 - **No change notifications.** These stay plain classes; a UI wraps them.
 
 Compare nodes by `ZobristKey` or FEN, not `Position.Equals`: `Position` equality includes move history, so the same board reached by a
@@ -80,10 +85,10 @@ different move order compares unequal.
 
 | Library | Responsibility |
 |---|---|
-| E2e4.Chess.Logic | SAN reading, `GameRecord`/`GameNode`, PGN reading and writing, comment command listing. No I/O, no UI, and net45-compatible. |
-| E2e4.Chess.Controls | A move list / notation control with a selected node, and navigation (start, back, forward, end, next/previous variation). It binds `FenString` and the last-move squares to the selected node, and branches through `AddMove` when a move is played at an earlier node. It draws `%cal`/`%csl` as arrows and circles. Its keyboard shortcuts must not clash with the board's arrow, Home and End cursor keys. |
+| E2e4.Chess.Logic | SAN reading, `GameRecord`/`GameNode`, PGN reading and writing, comment commands, the binary form and the position index. No I/O, no UI, and net45-compatible. |
+| E2e4.Chess.Controls | A move list / notation control with a selected node, and navigation (start, back, forward, end, next/previous variation). It binds `FenString` and the last-move squares to the selected node, and branches through `GameNode.AddMove` when a move is played at an earlier node. It draws `%cal`/`%csl` as arrows and circles. Its keyboard shortcuts must not clash with the board's arrow, Home and End cursor keys. |
 | E2e4.Chess.Fics.Client | Parses `moves`/`smoves` output into plain records: header, players, ratings, time control, `(san, elapsed)` per ply, and the result with its reason. It stays free of Logic and of chess rules. |
-| Consumers (demos, glue) | Turn FICS records into a `GameRecord` with `AddMove(san)`, setting `MoveTime` from the elapsed times. During a live game, append each style 12 move the same way, and check `node.Fen` against `Style12.ToFen()`. |
+| Consumers (demos, glue) | Turn FICS records into a `GameRecord` with `TryAddMove(san)`, setting `MoveTime` from the elapsed times. During a live game, append each style 12 move the same way, and check `node.Fen` against `Style12.ToFen()`. |
 
 ## FICS mapping
 

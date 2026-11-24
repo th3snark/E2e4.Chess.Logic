@@ -3,7 +3,8 @@
 <img src="assets/icon.png" alt="E2e4.Chess.Logic icon" width="96" height="96" align="right">
 
 A small, dependency-free chess rules library for .NET: bitboard move generation, a `Position` model with `Make`/`Unmake`, FEN parsing
-and validation, Zobrist hashing, and `PositionSetup` for editing and validating positions. It targets `net45`, `netstandard2.0`,
+and validation, Zobrist hashing, `PositionSetup` for editing and validating positions, and game records with variations that read and
+write PGN. It targets `net45`, `netstandard2.0`,
 `netstandard2.1`, `net10.0` and `net11.0`, so it runs on old and new runtimes and on Linux, macOS and Windows. Install from NuGet:
 `E2e4.Chess.Logic`.
 
@@ -34,9 +35,35 @@ For teaching tools, `Position` answers "why" questions about the board: `Attacke
 `HangingPieces` list squares (and `Pin`s), `LegalMovesFrom` and `Move.Find` classify a drag or arrow, and `Square.SameLine`/`Between` give the
 geometry of files, ranks and diagonals.
 
-For teaching tools, `Position` answers "why" questions about the board: `AttackersOf`, `DefendersOf`, `AttacksFrom`, `Checkers`, `Pins` and
-`HangingPieces` list squares (and `Pin`s), `LegalMovesFrom` and `Move.Find` classify a drag or arrow, and `Square.SameLine`/`Between` give the
-geometry of files, ranks and diagonals.
+## Games
+
+`Move.FromAlgebraicNotation` reads a move in standard algebraic notation (`Nbd7`, `exd6`, `e8=Q+`, `O-O`), leniently about marks such as
+`+`, `!` and `0-0`, and returns `Move.Invalid` for an illegal or ambiguous move.
+
+The `E2e4.Chess.Logic.Games` namespace holds whole games:
+
+```csharp
+using E2e4.Chess.Logic.Games;
+
+Pgn.TryParseGame("1. e4 e5 (1... c5 2. Nf3) 2. Nf3 {A comment} Nc6 *", out GameRecord? game);
+
+foreach (GameNode node in game!.MainLine())
+    Console.WriteLine($"{node} -> {node.Fen}");      // "1. e4 -> rnbqkbnr/...", ...
+
+GameNode e4 = game.Root.Next!;
+e4.TryAddMove("e6", out GameNode? french);           // another variation
+Console.WriteLine(Pgn.Write(game));
+```
+
+- `GameRecord` holds the tags, the start position and a tree of `GameNode`s. A node's `Children[0]` continues the main line and the
+  others are variations. Each node stores its `Fen`, `ZobristKey` and `San` when it is added, so showing any move on a board is a lookup;
+  `ToPosition()` replays the game to give a playable `Position` with its history. Nodes also carry `Comment`, `PreComment`, `Nags`,
+  `Clock` and `MoveTime`, and can be promoted, demoted and removed; `GetPath()` and `GameRecord.NodeAt` address any node.
+- `Pgn` reads and writes PGN with variations, comments, NAGs and `[%clk]`/`[%emt]` times. Reading is lenient: an illegal move ends its
+  line, the problem goes into `GameRecord.Errors`, and it never throws. `PgnCommand` finds other `[%name args]` commands in comments,
+  such as the `[%cal]` arrows and `[%csl]` squares a board might draw.
+- `GameEncoding` packs a game into a compact binary form (two bytes per move), and `PositionIndex` collects games into an opening index
+  keyed by position, so transpositions share one entry, with move counts and results.
 
 ## Notes
 
@@ -45,7 +72,9 @@ geometry of files, ranks and diagonals.
   reports no errors for. Warnings (a position no game could reach, or one that has ended) do not stop a `Position`.
   `Make`/`Unmake` throw at the ply limit
   (`Position.HalfMovesLimit`) rather than overrun their buffers.
-- The library does no I/O and holds no global state; a `Position` is not thread-safe, so give each thread its own (`DeepClone`).
+- The library does no I/O and holds no global state; a `Position` is not thread-safe, so give each thread its own (`DeepClone`). The same
+  goes for a `GameRecord` and its nodes.
+- A `Position`'s history grows as moves are made, so a new one is small (a little over 1 KB of history) until a game gets long.
 
 ## Build and test
 
