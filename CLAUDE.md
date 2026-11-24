@@ -35,9 +35,19 @@ Guidance for Claude Code (claude.ai/code) in this repository. See `README.md` fo
 dotnet build E2e4.Chess.Logic.slnx
 dotnet test E2e4.Chess.Logic.slnx
 dotnet format whitespace --verify-no-changes
+dotnet format style E2e4.Chess.Logic.slnx --verify-no-changes --diagnostics IDE0049 --severity warn
+dotnet test E2e4.Chess.Logic.slnx --filter "FullyQualifiedName~PerftUnitTest" --framework net10.0
 ```
 
-CI is defined in `.github/workflows/ci.yml`.
+The last line shows how to run a subset or a single class/test (any `FullyQualifiedName~` fragment) on one TFM. CI
+(`.github/workflows/ci.yml`) runs on ubuntu and Windows with both the .NET 10 and 11 SDKs, and also checks formatting, the IDE0049
+type-keyword rule (use `int`, not `Int32`), `dotnet list package --vulnerable`, and that the packed `.nupkg` lists no `<dependency>`.
+
+## Docs
+
+`docs/roadmap.md` lists the known gaps (SAN parsing, PGN, control maps, ...); finished items are deleted from it and described in the README
+instead. Board annotation drawing/storage (arrows, circles) belongs in E2e4.Chess.Controls, not here. `REFERENCES.md` records what the code was
+checked against.
 
 ## Releasing
 
